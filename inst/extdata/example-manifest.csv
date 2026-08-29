@@ -1,0 +1,3 @@
+sample_id,condition,timepoint,cna_seg,seg,params
+example-a,A,T1,example-a.cna.seg,example-a.seg,example-a.params.txt
+example-b,B,T1,example-b.cna.seg,example-b.seg,example-b.params.txt

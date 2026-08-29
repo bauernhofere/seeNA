@@ -1,0 +1,7 @@
+Sample	Tumor Fraction	Ploidy
+example-b	0.072	1.98
+
+example-b
+Gender:	female
+Tumor Fraction:	0.072
+Ploidy:	1.98

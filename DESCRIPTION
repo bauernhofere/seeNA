@@ -1,0 +1,26 @@
+Package: ichorViz
+Title: Explore and Compare ichorCNA Copy-Number Profiles
+Version: 0.0.0.9000
+Authors@R:
+    person("Emil", "Bauernhofer", email = "emil.bauernhofer@gmail.com", role = c("aut", "cre"))
+Description: Reads, validates, harmonizes, and visualizes output from ichorCNA.
+    Supports genome-wide and regional profiles, comparisons between related
+    samples, and cohort-scale bin matrices and heatmaps. The package consumes
+    existing ichorCNA output and does not perform copy-number calling.
+License: GPL (>= 3) + file LICENSE
+URL: https://github.com/bauernhofere/ichorViz
+BugReports: https://github.com/bauernhofere/ichorViz/issues
+Depends:
+    R (>= 4.1.0)
+Imports:
+    data.table,
+    ggplot2
+Suggests:
+    circlize,
+    ComplexHeatmap,
+    ragg,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3

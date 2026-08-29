@@ -1,0 +1,7 @@
+^\.github$
+^AGENTS\.md$
+^CITATION\.cff$
+^CONTRIBUTING\.md$
+^Makefile$
+^NOTICE\.md$
+^README\.Rmd$

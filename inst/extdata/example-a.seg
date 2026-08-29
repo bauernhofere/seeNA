@@ -1,0 +1,9 @@
+sample	chr	start	end	event	copy.number	bins	median
+example-a	1	1	2000000	NEUT	2	2	-0.005
+example-a	1	2000001	4000000	GAIN	3	2	0.58
+example-a	2	1	1000000	NEUT	2	1	0.01
+example-a	2	1000001	3000000	HETD	1	2	-0.70
+example-a	2	3000001	4000000	NEUT	2	1	0.04
+example-a	X	1	1000000	NEUT	2	1	0.00
+example-a	X	1000001	3000000	AMP	4	2	0.99
+example-a	X	3000001	4000000	NEUT	2	1	-0.01
