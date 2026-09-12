@@ -4,7 +4,13 @@
 \alias{plot_ichor_compare}
 \title{Compare two or more ichorCNA profiles}
 \usage{
-plot_ichor_compare(samples, region = NULL, colors = NULL, point_size = 0.4)
+plot_ichor_compare(
+  samples,
+  region = NULL,
+  colors = NULL,
+  point_size = 0.4,
+  ploidy_adjust = FALSE
+)
 }
 \arguments{
 \item{samples}{An \code{ichor_sample} or list of samples.}
@@ -14,9 +20,12 @@ plot_ichor_compare(samples, region = NULL, colors = NULL, point_size = 0.4)
 \item{colors}{Optional named vector of sample colors.}
 
 \item{point_size}{Bin point size.}
+
+\item{ploidy_adjust}{Apply \code{\link[=ichor_adjusted_logr]{ichor_adjusted_logr()}} to bins and segments?
+Default FALSE preserves raw output; TRUE requires TF/ploidy from this run.}
 }
 \value{
-A \code{ggplot} object.
+A \code{ggplot} object with an \code{ichor_transform} metadata attribute.
 }
 \description{
 Overlays original bins and segments in shared coordinates, without rebinning.

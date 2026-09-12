@@ -8,23 +8,27 @@ plot_ichor_profile(
   x,
   call_column = "corrected_call",
   colors = ichor_state_colors(),
-  point_size = 0.35
+  point_size = 0.35,
+  ploidy_adjust = FALSE
 )
 }
 \arguments{
-\item{x}{An \code{ichor_sample}.
-Segment medians are drawn in grey: raw segment events must not share the
-corrected bin-call legend. No purity/ploidy adjustment is performed here.}
+\item{x}{An \code{ichor_sample}.}
 
 \item{call_column}{Bin column used to color states; no implicit fallback.}
 
 \item{colors}{Named state color vector.}
 
 \item{point_size}{Bin point size.}
+
+\item{ploidy_adjust}{Apply \code{\link[=ichor_adjusted_logr]{ichor_adjusted_logr()}} to bins and segments?
+Default FALSE preserves raw output; TRUE requires TF/ploidy from this run.}
 }
 \value{
-A \code{ggplot} object.
+A \code{ggplot} object with an \code{ichor_transform} metadata attribute.
 }
 \description{
-Plot one genome-wide ichorCNA profile
+Segment medians are grey: raw segment events must not share the corrected
+bin-call legend. Sex-chromosome neutrality depends on the selected run; neither
+a logR zero nor sex metadata determines it. See \code{\link[=ichor_neutral_cn]{ichor_neutral_cn()}}.
 }

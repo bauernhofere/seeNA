@@ -11,7 +11,7 @@ read_ichor_sample(
   genome_build,
   sample_id = NULL,
   retain_paths = FALSE,
-  bounds = c("error", "trim")
+  bounds = c("window", "error", "trim")
 )
 }
 \arguments{
@@ -27,9 +27,10 @@ read_ichor_sample(
 
 \item{retain_paths}{Retain absolute source paths? Default FALSE.}
 
-\item{bounds}{\code{"error"} rejects out-of-build intervals. Explicit \code{"trim"}
-clips intervals straddling chromosome ends and records every change. Never
-use trimming as a substitute for checking the reference build.}
+\item{bounds}{Default \code{"window"} clips only terminal padding supported by a
+regular source bin grid (at least two equal-width interior bins). \code{"error"}
+rejects every out-of-build interval. Explicit \code{"trim"} clips any straddling
+interval. Every change is recorded. No policy verifies or guesses the build.}
 }
 \value{
 A validated \code{ichor_sample} with schema version 1 and import fingerprints.

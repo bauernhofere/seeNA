@@ -32,23 +32,31 @@ lengths (GRCh37/GRCh38; UCSC chr sizes), chromosomes 1-22, X, Y; chr prefixes an
 Bins/segments must be sorted, nonoverlapping and assembly-bounded. NA logR is
 allowed in sample objects; a plotting request without finite logR fails.
 
-Some real ichorCNA fixed-width terminal bins exceed reference lengths. Default
-`bounds = 'error'` rejects them. Explicit `bounds = 'trim'` clips only intervals
-that straddle a reference chromosome end, warns, and stores role/row/original/new
-coordinates in `coordinate_changes`. Intervals wholly outside the reference still
-fail. Trimming is not evidence that the declared build is correct.
+Fixed-width terminal bins can exceed reference lengths. Default `bounds='window'`
+requires at least two equal-width observed interior bins, consistent 1-based grid
+starts/endpoints, and overhangs ending at the rounded terminal window. A segment
+overhang must end at an observed overhanging bin boundary. Matched padding is
+clipped, messaged, and stored in `coordinate_changes`; unsupported cases fail.
+`bounds='error'` rejects all overruns. Explicit `bounds='trim'` remains available
+for broader, manually inspected straddling intervals. Its warnings and window
+messages are classed and aggregated once per cohort, leaving unrelated warnings
+untouched. Wholly out-of-bounds intervals still fail. Several assemblies can
+share a rounded terminal window; this is not a genome-build verification test.
 
 A sample object reconciles source IDs across all supplied files before applying
 an alias. Aliases replace source IDs in returned tables. With unprefixed bin
 columns, source identity falls back to the .cna.seg basename. Renamed standalone
 files therefore need matching source naming. Aliases are not multi-sample selectors.
 Identity agreement cannot distinguish multiple runs for the same sample: the
-caller must explicitly choose one run for all components. Never select a run by
-matching a desired manuscript TF inside the package.
+caller must explicitly choose one run for all components. The workflow vignette
+shows an auditable comparison against externally adjudicated TF, with explicit
+tolerance and failure on non-unique matches. The package does not select runs by
+file order or optimize fits to a desired manuscript result.
 
 ## Measurements and categorical calls
 
-- `logR`: source log2-ratio signal; never re-centered or purity-adjusted here.
+- `logR`: unmodified source signal. Optional upstream-formula plotting adjustment
+  is a separate display transform; it does not mutate this column.
 - `copy_number`, `event`: raw ichorCNA output fields.
 - `corrected_copy_number`, `corrected_call`: caller-corrected output fields, not
   recomputed by ichorViz. Corrected calls, absolute CN, logR sign and neutrality
@@ -60,6 +68,17 @@ matching a desired manuscript TF inside the package.
 Call vocabulary: HOMD -> Deep loss (-2), HETD -> Loss (-1), NEUT -> Neutral (0),
 GAIN/AMP/HLAMP and numbered HLAMP variants -> Gain (1). NA/empty -> missing;
 other tokens error. There is no fallback from corrected_call to event.
+
+Public helpers: `ichor_tf()` and `ichor_ploidy()` return scalars (NA if absent);
+`ichor_call_state()` implements the mapping above; `ichor_genome_layout()` returns
+selected reference chromosomes with lengths/offsets/midpoints. Reuse the same
+chromosome selection for all samples to preserve coordinate alignment.
+
+`ichor_neutral_cn()` reports observed NEUT-bin CN evidence by autosome/X/Y, paired
+with the corresponding raw or corrected CN field. Exactly one distinct observed
+CN yields a supported value. Missing or conflicting evidence yields NA plus
+status/counts/candidates, never a diploid default or cross-chromosome fallback.
+This evidence does not identify every run-level threshold or biological baseline.
 
 ## Fixed-bin matrices
 
@@ -83,7 +102,9 @@ coverage; zero coverage always gives NA even if min_coverage=0. Lowering the
 threshold is explicit and recorded. The numeric values, coverage and logical
 mixed matrices share dimensions/dimnames. No implicit NA imputation. Dense matrix
 allocation is guarded by max_cells (50 million default); memory use also includes
-inputs, temporary calculations, bin labels and metadata.
+inputs, temporary calculations, bin labels and metadata. Source bin filtering
+can produce substantial NA fractions even for valid input (the exact proportion
+is dataset-specific); inspect coverage rather than assuming the import failed.
 
 ## Plotting
 
@@ -93,6 +114,15 @@ grey, never neutral blue. Comparison overlays use original genomic midpoints,
 not aligned/rebinned observations; only segment endpoints are clipped in region
 views. Common genome axes use reference lengths even for sparse inputs. No
 vertical nudging, hidden downsampling or biological reclassification.
+
+`ploidy_adjust=TRUE` applies `log2((TF*ploidy + (1-TF)*2)/2)` to both bins and
+segment medians in profile/comparison/region plots. `ichor_adjusted_logr()` exposes
+the same vectors. This reproduces the v0.4 plotting formula using exported,
+possibly rounded parameters. Raw output remains the default; missing parameters
+when adjustment is requested are an error. Plots label the scale and store shift
+metadata in `ichor_transform`. This is not purity deconvolution, integer CN, or a
+promise that every gain/loss will lie above/below zero. Chromosome-X conventions
+and noise still matter; neither y=0 nor gender alone identifies neutral CN.
 
 Heatmaps preserve manifest order by default; identifiers are hidden unless
 requested. Categorical colors are discrete. Continuous default scales include

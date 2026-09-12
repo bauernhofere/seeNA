@@ -4,7 +4,7 @@
   if (length(call_column) != 1 || !call_column %in% c("corrected_call", "event") || !call_column %in% names(d)) {
     .ichor_abort("Requested call_column is unavailable; choose corrected_call or event explicitly.")
   }
-  .call_state(d[[call_column]])
+  ichor_call_state(d[[call_column]])
 }
 
 .check_colors <- function(colors, required) {
@@ -22,25 +22,34 @@
 
 #' Plot one genome-wide ichorCNA profile
 #'
+#' Segment medians are grey: raw segment events must not share the corrected
+#' bin-call legend. Sex-chromosome neutrality depends on the selected run; neither
+#' a logR zero nor sex metadata determines it. See [ichor_neutral_cn()].
 #' @param x An `ichor_sample`.
-#' Segment medians are drawn in grey: raw segment events must not share the
-#' corrected bin-call legend. No purity/ploidy adjustment is performed here.
 #' @param call_column Bin column used to color states; no implicit fallback.
 #' @param colors Named state color vector.
 #' @param point_size Bin point size.
-#' @return A `ggplot` object.
+#' @param ploidy_adjust Apply [ichor_adjusted_logr()] to bins and segments?
+#'   Default FALSE preserves raw output; TRUE requires TF/ploidy from this run.
+#' @return A `ggplot` object with an `ichor_transform` metadata attribute.
 #' @export
 plot_ichor_profile <- function(x, call_column = "corrected_call",
-                               colors = ichor_state_colors(), point_size = 0.35) {
+                               colors = ichor_state_colors(), point_size = 0.35,
+                               ploidy_adjust = FALSE) {
   validate_ichor_sample(x)
+  .flag(ploidy_adjust, "ploidy_adjust")
   .check_colors(colors, names(ichor_state_colors()))
   if (!any(is.finite(x$bins$logR))) .ichor_abort("No finite logR values to plot.")
-  layout <- .genome_layout(x$genome_build, unique(c(x$bins$chr, x$segments$chr)))
+  layout <- ichor_genome_layout(x$genome_build,
+    c(as.character(1:22), "X", intersect("Y", c(x$bins$chr, x$segments$chr))))
   bins <- .add_genome_coordinates(x$bins, layout)
   bins$state <- .bin_state(bins, call_column)
+  shift <- if (ploidy_adjust) .logr_shift(x) else 0
+  bins$logR <- bins$logR + shift
   seg <- x$segments
   if (!is.null(seg)) {
     seg <- .add_genome_coordinates(seg, layout, segments = TRUE)
+    seg$median <- seg$median + shift
   }
 
   p <- ggplot2::ggplot(bins, ggplot2::aes(x = x, y = logR)) +
@@ -53,7 +62,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
     ggplot2::scale_x_continuous(breaks = layout$mid, labels = layout$chr,
                                 limits = c(0, max(layout$boundary)),
                                 expand = ggplot2::expansion(mult = c(0.002, 0.002))) +
-    ggplot2::labs(y = expression(log[2]~ratio), color = "Copy-number state",
+    ggplot2::labs(y = if (ploidy_adjust) "Ploidy-adjusted log2 ratio" else "Raw log2 ratio", color = "Copy-number state",
                   title = x$sample_id,
                   subtitle = paste(x$genome_build, call_column, .tf_label(x), sep = " | ")) +
     .theme_ichor()
@@ -63,6 +72,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
       inherit.aes = FALSE, color = "grey35", linewidth = 0.55, lineend = "round", na.rm = TRUE
     )
   }
+  attr(p, "ichor_transform") <- list(ploidy_adjust = ploidy_adjust, shift = stats::setNames(shift, x$sample_id))
   p
 }
 
@@ -79,12 +89,12 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
   samples
 }
 
-.comparison_data <- function(samples, region = NULL) {
+.comparison_data <- function(samples, region = NULL, ploidy_adjust = FALSE) {
   builds <- unique(vapply(samples, `[[`, character(1), "genome_build"))
   if (length(builds) != 1L) .ichor_abort("All samples must use the same genome build.")
   if (is.null(region)) {
     chromosomes <- unique(unlist(lapply(samples, function(s) c(s$bins$chr, s$segments$chr))))
-    layout <- .genome_layout(builds, chromosomes)
+    layout <- ichor_genome_layout(builds, c(as.character(1:22), "X", intersect("Y", chromosomes)))
   } else {
     region <- parse_ichor_region(region, builds)
     layout <- NULL
@@ -92,6 +102,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
 
   bins <- Map(function(s, id) {
     d <- s$bins[c("chr", "start", "end", "logR")]
+    if (ploidy_adjust) d$logR <- d$logR + .logr_shift(s)
     if (is.null(region)) {
       d <- .add_genome_coordinates(d, layout)
     } else {
@@ -106,6 +117,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
     d <- s$segments
     if (is.null(d)) return(NULL)
     d <- d[c("chr", "start", "end", "median")]
+    if (ploidy_adjust) d$median <- d$median + .logr_shift(s)
     if (is.null(region)) {
       d <- .add_genome_coordinates(d, layout, segments = TRUE)
     } else {
@@ -132,11 +144,14 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
 #' @param region Optional `chr:start-end` region. The default is genome-wide.
 #' @param colors Optional named vector of sample colors.
 #' @param point_size Bin point size.
-#' @return A `ggplot` object.
+#' @inheritParams plot_ichor_profile
+#' @return A `ggplot` object with an `ichor_transform` metadata attribute.
 #' @export
-plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size = 0.4) {
+plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size = 0.4,
+                               ploidy_adjust = FALSE) {
   samples <- .as_sample_list(samples)
-  d <- .comparison_data(samples, region)
+  .flag(ploidy_adjust, "ploidy_adjust")
+  d <- .comparison_data(samples, region, ploidy_adjust)
   if (!nrow(d$bins)) .ichor_abort("No bins overlap the requested region.", "ichorviz_region_error")
   if (is.null(colors)) colors <- stats::setNames(.default_sample_colors(length(samples)), names(samples))
   .check_colors(colors, names(samples))
@@ -148,7 +163,7 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
     ggplot2::geom_hline(yintercept = 0, color = "grey60", linewidth = 0.35) +
     ggplot2::geom_point(size = point_size, alpha = 0.65, na.rm = TRUE) +
     ggplot2::scale_color_manual(values = colors[names(samples)]) +
-    ggplot2::labs(y = expression(log[2]~ratio), color = NULL,
+    ggplot2::labs(y = if (ploidy_adjust) "Ploidy-adjusted log2 ratio" else "Raw log2 ratio", color = NULL,
                   subtitle = paste(d$build, paste(paste(names(samples), vapply(samples, .tf_label, character(1))), collapse = " | "), sep = " | ")) +
     .theme_ichor()
 
@@ -173,6 +188,8 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
                                     format(d$region$end, big.mark = ",", scientific = FALSE))) +
       ggplot2::theme(axis.title.x = ggplot2::element_text())
   }
+  attr(p, "ichor_transform") <- list(ploidy_adjust = ploidy_adjust,
+    shift = vapply(samples, function(s) if (ploidy_adjust) .logr_shift(s) else 0, numeric(1)))
   p
 }
 
@@ -182,6 +199,8 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
 #' @param region Required chromosome or `chr:start-end` interval.
 #' @return A `ggplot` object.
 #' @export
-plot_ichor_region <- function(samples, region, colors = NULL, point_size = 0.55) {
-  plot_ichor_compare(samples, region = region, colors = colors, point_size = point_size)
+plot_ichor_region <- function(samples, region, colors = NULL, point_size = 0.55,
+                              ploidy_adjust = FALSE) {
+  plot_ichor_compare(samples, region = region, colors = colors, point_size = point_size,
+                     ploidy_adjust = ploidy_adjust)
 }

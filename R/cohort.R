@@ -26,7 +26,7 @@
 #' @return A validated `ichor_cohort` in manifest order.
 #' @export
 read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
-                              retain_paths = FALSE, bounds = c("error", "trim"),
+                              retain_paths = FALSE, bounds = c("window", "error", "trim"),
                               metadata_columns = NULL) {
   genome_build <- match.arg(genome_build, c("hg19", "hg38"))
   bounds <- match.arg(bounds)
@@ -55,11 +55,13 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
   # character() is an intentional empty annotation allowlist, not a default.
   if (identical(metadata_columns, character())) metadata <- tab["sample_id"]
   load_one <- function(i) {
-    tryCatch(list(sample = read_ichor_sample(tab$cna_seg[i],
+    tryCatch(withCallingHandlers(list(sample = read_ichor_sample(tab$cna_seg[i],
       seg = if ("seg" %in% names(tab)) tab$seg[i] else NULL,
       params = if ("params" %in% names(tab)) tab$params[i] else NULL,
       genome_build = genome_build, sample_id = tab$sample_id[i],
       retain_paths = retain_paths, bounds = bounds)),
+      ichorviz_bounds_warning = function(w) invokeRestart("muffleWarning"),
+      ichorviz_window_padding = function(m) invokeRestart("muffleMessage")),
       error = function(e) list(error = conditionMessage(e)))
   }
   if (workers > 1L && .Platform$OS.type != "windows") {
@@ -81,6 +83,8 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
   x <- structure(list(schema_version = 1L, samples = samples, metadata = metadata,
                       genome_build = genome_build), class = "ichor_cohort")
   validate_ichor_cohort(x)
+  changes <- vapply(samples, function(s) if (is.null(s$coordinate_changes)) 0L else nrow(s$coordinate_changes), integer(1))
+  .bounds_notice(bounds, sum(changes), sum(changes > 0))
   x
 }
 

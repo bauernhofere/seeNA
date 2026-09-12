@@ -16,9 +16,18 @@
   data.frame(chr = .chr_levels, length = sizes, stringsAsFactors = FALSE)
 }
 
-.genome_layout <- function(build, chromosomes = NULL) {
-  d <- .chromosome_sizes(build)
-  if (!is.null(chromosomes) && !"Y" %in% chromosomes) d <- d[d$chr != "Y", , drop = FALSE]
+#' Reference chromosome lengths and cumulative offsets
+#' @param genome_build Explicit hg19 or hg38.
+#' @param chromosomes Chromosomes to include; default autosomes and X.
+#'   Selected chromosomes are always ordered genomically. Include Y explicitly.
+#' @return Data frame with chr, length, offset, mid and boundary in base pairs.
+#'   Offsets depend on the chromosome set; reuse the same layout across samples.
+#' @export
+ichor_genome_layout <- function(genome_build, chromosomes = c(as.character(1:22), "X")) {
+  d <- .chromosome_sizes(genome_build)
+  chromosomes <- unique(.normalize_chr(chromosomes))
+  if (!length(chromosomes) || anyNA(chromosomes) || !all(chromosomes %in% d$chr)) .ichor_abort("Unsupported chromosomes.")
+  d <- d[d$chr %in% chromosomes, , drop = FALSE]
   d$offset <- c(0, utils::head(cumsum(d$length), -1))
   d$mid <- d$offset + d$length / 2
   d$boundary <- d$offset + d$length

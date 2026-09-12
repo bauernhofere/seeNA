@@ -1,6 +1,6 @@
 Package: ichorViz
 Title: Explore and Compare ichorCNA Copy-Number Profiles
-Version: 0.0.0.9001
+Version: 0.0.0.9002
 Authors@R:
     person("Emil", "Bauernhofer", email = "emil.bauernhofer@gmail.com", role = c("aut", "cre"))
 Description: Reads, validates, harmonizes, and visualizes output from ichorCNA.
@@ -19,10 +19,12 @@ Imports:
 Suggests:
     circlize,
     ComplexHeatmap,
-    devtools,
-    roxygen2,
+    knitr,
+    rmarkdown,
     ragg,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/Needs/development: devtools, roxygen2@7.3.3
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

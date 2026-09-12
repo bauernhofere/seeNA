@@ -1,7 +1,7 @@
 test_that("missing is never neutral or false and unknown tokens fail", {
   expect_equal(.call_score(c(NA, "NEUT", "HETD", "GAIN", "HLAMP12", "HOMD")), c(NA, 0, -1, 1, 1, -2))
   expect_equal(.as_flag(c(NA, "", "false", "TRUE", "0", "1")), c(NA, NA, FALSE, TRUE, FALSE, TRUE))
-  expect_error(.call_state("TYPO"), class = "ichorviz_schema_error")
+  expect_error(ichor_call_state("TYPO"), class = "ichorviz_schema_error")
   expect_error(.as_flag("uncertain"), class = "ichorviz_schema_error")
   expect_error(.as_number("bad"), class = "ichorviz_schema_error")
   expect_error(.as_number("Inf"), class = "ichorviz_schema_error")
@@ -103,7 +103,7 @@ test_that("terminal clipping is explicit, recorded, and does not select a build"
   d <- data.table::fread(fixture_path("example-a.cna.seg"), data.table = FALSE)[1, ]
   d$start <- 248000001; d$end <- 249000000
   data.table::fwrite(d, f, sep = "\t")
-  expect_error(read_ichor_sample(f, genome_build = "hg38"), "out-of-build")
+  expect_error(read_ichor_sample(f, genome_build = "hg38", bounds = "error"), "out-of-build")
   expect_warning(a <- read_ichor_sample(f, genome_build = "hg38", bounds = "trim"), "Trimmed 1")
   expect_equal(a$bins$end, 248956422)
   expect_equal(a$coordinate_changes$original_end, 249000000)
@@ -216,14 +216,15 @@ test_that("heatmap drawing succeeds and ordering and missingness are deliberate"
   m <- ichor_matrix(c, value = "call", chromosomes = "1")
   p <- tempfile(fileext = ".pdf")
   grDevices::pdf(p)
-  on.exit(grDevices::dev.off(), add = TRUE)
-  h <- plot_ichor_heatmap(m, annotation_columns = "condition", row_order = rev(m$samples$sample_id))
-  h <- ComplexHeatmap::draw(h)
-  expect_equal(ComplexHeatmap::row_order(h), 2:1)
+  tryCatch({
+    h <- plot_ichor_heatmap(m, annotation_columns = "condition", row_order = rev(m$samples$sample_id))
+    h <- ComplexHeatmap::draw(h)
+    expect_equal(ComplexHeatmap::row_order(h), 2:1)
+    m$values[2, ] <- NA_real_
+    expect_error(plot_ichor_heatmap(m, cluster_rows = TRUE), "at least two bins")
+    expect_s4_class(ComplexHeatmap::draw(plot_ichor_heatmap(m)), "HeatmapList")
+    m$samples <- m$samples[2:1, ]
+    expect_error(plot_ichor_heatmap(m), "metadata or bin order")
+  }, finally = grDevices::dev.off())
   expect_gt(file.info(p)$size, 0)
-  m$values[2, ] <- NA_real_
-  expect_error(plot_ichor_heatmap(m, cluster_rows = TRUE), "at least two bins")
-  expect_s4_class(ComplexHeatmap::draw(plot_ichor_heatmap(m)), "HeatmapList")
-  m$samples <- m$samples[2:1, ]
-  expect_error(plot_ichor_heatmap(m), "metadata or bin order")
 })

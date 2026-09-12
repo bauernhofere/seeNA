@@ -80,7 +80,12 @@
   x
 }
 
-.call_state <- function(x) {
+#' Map ichorCNA calls to display states
+#' @param x Character vector of raw event or corrected-call tokens.
+#' @return Factor with levels matching [ichor_state_colors()]. Missing values
+#'   remain NA; unsupported calls raise a schema error. Does not infer new calls.
+#' @export
+ichor_call_state <- function(x) {
   x <- .normalize_call(x)
   out <- rep(NA_character_, length(x))
   out[which(x == "NEUT")] <- "Neutral"
@@ -91,5 +96,5 @@
 }
 
 .call_score <- function(x) {
-  unname(c("Deep loss" = -2, "Loss" = -1, "Neutral" = 0, "Gain" = 1)[as.character(.call_state(x))])
+  unname(c("Deep loss" = -2, "Loss" = -1, "Neutral" = 0, "Gain" = 1)[as.character(ichor_call_state(x))])
 }

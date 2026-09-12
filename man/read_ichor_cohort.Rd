@@ -10,7 +10,7 @@ read_ichor_cohort(
   workers = 1L,
   root = NULL,
   retain_paths = FALSE,
-  bounds = c("error", "trim"),
+  bounds = c("window", "error", "trim"),
   metadata_columns = NULL
 )
 }

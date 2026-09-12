@@ -42,8 +42,12 @@ sample_a <- read_ichor_sample(
   genome_build = "hg38"
 )
 
-plot_ichor_profile(sample_a)
-plot_ichor_region(sample_a, "chr1:1-4000000")
+plot_ichor_profile(sample_a)  # explicitly labelled raw logR by default
+plot_ichor_profile(sample_a, ploidy_adjust = TRUE)  # upstream plotting formula
+plot_ichor_region(sample_a, "chr1:1-4000000", ploidy_adjust = TRUE)
+ichor_tf(sample_a)
+ichor_ploidy(sample_a)
+ichor_neutral_cn(sample_a)  # observed evidence, not a guessed baseline
 ```
 
 ## Compare related samples
@@ -91,15 +95,33 @@ biological interpretation.
 - Continuous values use overlap-weighted means. Categorical calls use base-pair
   mode (ties -> NA); inspect `mat$mixed` for heterogeneous bins.
 - `mat$coverage` reports observed support. Default `min_coverage = 1` requires
-  full target coverage, including shortened chromosome-end bins.
-- Genome bounds are strict. If you have verified terminal bin padding in the
-  source output, use `bounds = "trim"` at import and inspect `coordinate_changes`.
+  full target coverage, including shortened chromosome-end bins. Upstream bin
+  filtering can therefore produce many NA cells; inspect coverage rather than
+  interpreting missing bins as neutral.
+- Default `bounds = "window"` handles fixed-window terminal padding only when
+  supported by the observed source grid, records changes, and emits one cohort
+  summary. `bounds = "error"` is stricter; broader `"trim"` is opt-in. Window
+  acceptance does not verify genome build.
 - Heatmaps retain manifest order; clustering is explicit and uses common observed
   bins without imputation. CN 2 is a visual reference, not an inferred baseline.
 - Source component IDs must match before aliases are applied. You must choose
   the same ichorCNA run for all components; matching IDs cannot verify the run.
 - Provenance fingerprints are captured at import; paths require
   `retain_paths = TRUE`. Neither aliases nor path redaction anonymize genomic data.
+
+## Public workflow helpers
+
+Use `ichor_call_state()` with `ichor_state_colors()` rather than reimplementing
+call mappings, and `ichor_genome_layout()` rather than reconstructing reference
+offsets. `ichor_adjusted_logr()` exposes the upstream mixture-ploidy display shift
+for bins or segments; it does not change calls or guarantee a gain/loss sign.
+`ichor_neutral_cn()` returns diagnostic evidence by autosome/X/Y, with NA on
+missing or ambiguous evidence, never a default two copies.
+
+See `vignette("manuscript-workflow", package = "ichorViz")` for an executable
+example, chromosome-baseline caveats, missingness, and an explicit run-selection
+recipe that refuses ambiguous TF matches. Local GitHub installs may need
+`build_vignettes = TRUE` to install the vignette.
 
 ## Development and manuscript use
 

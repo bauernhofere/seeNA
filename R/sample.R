@@ -8,7 +8,7 @@
   }
   limits <- .chromosome_sizes(build)
   if (any(d$start < 1 | d$end < d$start | d$end > limits$length[match(d$chr, limits$chr)])) {
-    fail("has invalid or out-of-build coordinates; use bounds = 'trim' at import only for documented terminal overhangs.")
+    fail("has invalid or out-of-build coordinates. Fixed-width terminal padding may need bounds = 'window'; verify the reference build. Explicit 'trim' requires inspecting original intervals.")
   }
   if (!identical(order(.chr_rank(d$chr), d$start, d$end), seq_len(nrow(d)))) fail("must be sorted in genomic order.")
   if (nrow(d) > 1) {
@@ -49,14 +49,15 @@
 #' @param genome_build Explicit `"hg19"` or `"hg38"`.
 #' @param sample_id Optional output alias; source identities are still checked.
 #' @param retain_paths Retain absolute source paths? Default FALSE.
-#' @param bounds `"error"` rejects out-of-build intervals. Explicit `"trim"`
-#'   clips intervals straddling chromosome ends and records every change. Never
-#'   use trimming as a substitute for checking the reference build.
+#' @param bounds Default `"window"` clips only terminal padding supported by a
+#'   regular source bin grid (at least two equal-width interior bins). `"error"`
+#'   rejects every out-of-build interval. Explicit `"trim"` clips any straddling
+#'   interval. Every change is recorded. No policy verifies or guesses the build.
 #' @return A validated `ichor_sample` with schema version 1 and import fingerprints.
 #' @export
 read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
                               sample_id = NULL, retain_paths = FALSE,
-                              bounds = c("error", "trim")) {
+                              bounds = c("window", "error", "trim")) {
   genome_build <- match.arg(genome_build, c("hg19", "hg38"))
   bounds <- match.arg(bounds)
   .flag(retain_paths, "retain_paths")
@@ -83,12 +84,12 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
   }
   if (!is.null(parameters)) parameters$sample_id <- id
   changes <- NULL
-  if (bounds == "trim") {
+  if (bounds != "error") {
+    if (bounds == "window") .check_window_padding(bins, segments, genome_build)
     b <- .trim_terminal(bins, genome_build, "bins")
     s <- .trim_terminal(segments, genome_build, "segments")
     bins <- b$data; segments <- s$data
     changes <- rbind(b$changes, s$changes)
-    if (!is.null(changes)) warning(sprintf("Trimmed %d terminal intervals; see coordinate_changes.", nrow(changes)), call. = FALSE)
   }
   before$sample_id <- id
   before$genome_build <- genome_build
@@ -101,6 +102,7 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
                       coordinate_policy = bounds, coordinate_changes = changes,
                       provenance = before), class = "ichor_sample")
   validate_ichor_sample(x)
+  .bounds_notice(bounds, if (is.null(changes)) 0L else nrow(changes))
   x
 }
 

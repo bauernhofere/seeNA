@@ -2,14 +2,15 @@
 
 ## Scope and architecture
 
-Read existing ichorCNA output; do not call CNAs, choose a fitted solution, infer
+Read existing ichorCNA output; do not call CNAs, automatically choose a fitted solution, infer
 patient pairing, or import unrelated clinical spreadsheets. User-supplied manifest
 annotations are supported but are not automatically safe to share.
 
 `files -> parsers -> validated sample -> cohort -> coverage-aware matrix -> plots`
 
 - `R/read.R`: exact, single-sample schemas; normalize without guessing.
-- `R/sample.R`: source identity checks, interval/value validation, explicit bounds.
+- `R/sample.R`, `R/bounds.R`: source identity, interval validation, audited window padding.
+- `R/accessors.R`: public parameters, upstream display transform, NEUT-bin evidence.
 - `R/provenance.R`: immutable import-time fingerprints; paths opt-in.
 - `R/genome.R`: coordinate reference and region parsing.
 - `R/cohort.R`: atomic manifest import, sample/metadata order validation.
@@ -28,7 +29,11 @@ annotations are supported but are not automatically safe to share.
 - Coverage and heterogeneous-call flags travel with the matrix.
 - Match source component IDs before applying aliases. Identical IDs do not prove
   the files came from the same fitted run; that remains an input-selection duty.
-- Inputs are read-only; bounds trimming is opt-in, auditable and not liftover.
+- Inputs are read-only. Default window-padding handling requires regular source
+  grid evidence; broader trimming is opt-in. Neither policy proves assembly identity.
+- Adjusted logR is an explicit display transform, not a new call or guarantee
+  that every loss/gain has negative/positive y. Raw output stays the default.
+- NEUT-bin CN evidence never falls back across chromosome classes or to CN 2.
 - No patient-specific code patches. Fix source data or selection manifests.
 
 ## Privacy and testing

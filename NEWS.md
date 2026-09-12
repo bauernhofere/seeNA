@@ -1,3 +1,16 @@
+# ichorViz 0.0.0.9002
+
+* Added default bounds='window' for source-grid-supported terminal padding;
+  arbitrary overhangs still fail. Window acceptance does not verify genome build.
+* Aggregated coordinate notices at cohort level, without blanket warning suppression.
+* Exported TF/ploidy accessors, call-state mapping, reference genome layout,
+  upstream-formula adjusted logR, and diagnostic neutral-CN evidence.
+* Added explicit ploidy_adjust to profile, comparison and region plots. Raw
+  output remains the default; transforms never modify source values or calls.
+* Added an executable workflow vignette and an auditable run-selection recipe.
+* Fixed cross-platform rendering tests to close PDF devices before checking bytes.
+* Moved development tooling out of Suggests; version remains pre-release.
+
 # ichorViz 0.0.0.9001
 
 * Strict numeric/flag/call parsing preserves missingness and rejects ambiguity.

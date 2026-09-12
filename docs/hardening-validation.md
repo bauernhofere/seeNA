@@ -1,7 +1,9 @@
 # Hardening validation — 2026-09-12
 
 Scope: private development version 0.0.0.9001; not a public release or claim of
-clinical/scientific validation of ichorCNA itself.
+clinical/scientific validation of ichorCNA itself. See
+[downstream-validation.md](downstream-validation.md) for subsequent API changes,
+new evidence, and the diagnosis of CI failures not seen in this local run.
 
 ## Automated evidence
 

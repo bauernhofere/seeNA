@@ -27,11 +27,13 @@ jobs:
           use-public-rspm: true
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            roxygen2@7.3.3
           needs: check
       - name: Verify generated documentation
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
-          Rscript -e 'roxygen2::roxygenise()'
+          Rscript -e 'stopifnot(as.character(packageVersion("roxygen2")) == read.dcf("DESCRIPTION")[1, "RoxygenNote"]); roxygen2::roxygenise()'
           git diff --exit-code -- man NAMESPACE
       - uses: r-lib/actions/check-r-package@v2
