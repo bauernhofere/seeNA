@@ -1,24 +1,31 @@
 # Individual and comparison plots -----------------------------------------
 
 .bin_state <- function(d, call_column) {
-  if (!call_column %in% names(d)) {
-    available <- intersect(c("corrected_call", "event"), names(d))
-    if (!length(available)) return(factor(rep("Neutral", nrow(d)), levels = names(ichor_state_colors())))
-    call_column <- available[1]
+  if (length(call_column) != 1 || !call_column %in% c("corrected_call", "event") || !call_column %in% names(d)) {
+    .ichor_abort("Requested call_column is unavailable; choose corrected_call or event explicitly.")
   }
   .call_state(d[[call_column]])
 }
 
-.segment_state <- function(d) {
-  if (is.null(d) || !nrow(d)) return(NULL)
-  if ("event" %in% names(d)) .call_state(d$event) else
-    factor(rep("Neutral", nrow(d)), levels = names(ichor_state_colors()))
+.check_colors <- function(colors, required) {
+  if (!is.character(colors) || is.null(names(colors)) || anyDuplicated(names(colors)) ||
+      !all(required %in% names(colors)) || anyNA(colors)) .ichor_abort("colors must be named for every sample or state, without duplicates.")
+  tryCatch(grDevices::col2rgb(colors), error = function(e) .ichor_abort("Invalid color values."))
+  invisible(colors)
+}
+
+.tf_label <- function(s) {
+  if (is.null(s$params)) return("TF/ploidy unavailable")
+  sprintf("TF %s; ploidy %s", if (is.na(s$params$tumor_fraction)) "NA" else sprintf("%.2f%%", 100 * s$params$tumor_fraction),
+          if (is.na(s$params$ploidy)) "NA" else sprintf("%.2f", s$params$ploidy))
 }
 
 #' Plot one genome-wide ichorCNA profile
 #'
 #' @param x An `ichor_sample`.
-#' @param call_column Column used to color copy-number states.
+#' Segment medians are drawn in grey: raw segment events must not share the
+#' corrected bin-call legend. No purity/ploidy adjustment is performed here.
+#' @param call_column Bin column used to color states; no implicit fallback.
 #' @param colors Named state color vector.
 #' @param point_size Bin point size.
 #' @return A `ggplot` object.
@@ -26,30 +33,34 @@
 plot_ichor_profile <- function(x, call_column = "corrected_call",
                                colors = ichor_state_colors(), point_size = 0.35) {
   validate_ichor_sample(x)
-  layout <- .genome_layout(x$genome_build, x$bins$chr)
+  .check_colors(colors, names(ichor_state_colors()))
+  if (!any(is.finite(x$bins$logR))) .ichor_abort("No finite logR values to plot.")
+  layout <- .genome_layout(x$genome_build, unique(c(x$bins$chr, x$segments$chr)))
   bins <- .add_genome_coordinates(x$bins, layout)
   bins$state <- .bin_state(bins, call_column)
   seg <- x$segments
   if (!is.null(seg)) {
     seg <- .add_genome_coordinates(seg, layout, segments = TRUE)
-    seg$state <- .segment_state(seg)
   }
 
   p <- ggplot2::ggplot(bins, ggplot2::aes(x = x, y = logR)) +
     ggplot2::geom_vline(xintercept = utils::head(layout$boundary, -1), color = "grey90", linewidth = 0.25) +
     ggplot2::geom_hline(yintercept = 0, color = "grey60", linewidth = 0.35) +
     ggplot2::geom_point(ggplot2::aes(color = state), size = point_size, alpha = 0.85,
-                        na.rm = TRUE) +
-    ggplot2::scale_color_manual(values = colors, drop = FALSE) +
+                        na.rm = TRUE, show.legend = TRUE) +
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 2, alpha = 1))) +
+    ggplot2::scale_color_manual(values = colors, drop = FALSE, na.value = "grey65") +
     ggplot2::scale_x_continuous(breaks = layout$mid, labels = layout$chr,
+                                limits = c(0, max(layout$boundary)),
                                 expand = ggplot2::expansion(mult = c(0.002, 0.002))) +
     ggplot2::labs(y = expression(log[2]~ratio), color = "Copy-number state",
-                  title = x$sample_id) +
+                  title = x$sample_id,
+                  subtitle = paste(x$genome_build, call_column, .tf_label(x), sep = " | ")) +
     .theme_ichor()
   if (!is.null(seg) && nrow(seg)) {
     p <- p + ggplot2::geom_segment(
-      data = seg, ggplot2::aes(x = x, xend = xend, y = median, yend = median, color = state),
-      inherit.aes = FALSE, linewidth = 0.55, lineend = "round", na.rm = TRUE
+      data = seg, ggplot2::aes(x = x, xend = xend, y = median, yend = median),
+      inherit.aes = FALSE, color = "grey35", linewidth = 0.55, lineend = "round", na.rm = TRUE
     )
   }
   p
@@ -61,6 +72,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
       !all(vapply(samples, inherits, logical(1), what = "ichor_sample"))) {
     .ichor_abort("samples must be an ichor_sample or a list of ichor_sample objects.")
   }
+  lapply(samples, validate_ichor_sample)
   ids <- vapply(samples, `[[`, character(1), "sample_id")
   if (anyDuplicated(ids)) .ichor_abort("Sample identifiers must be unique.")
   names(samples) <- ids
@@ -71,7 +83,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
   builds <- unique(vapply(samples, `[[`, character(1), "genome_build"))
   if (length(builds) != 1L) .ichor_abort("All samples must use the same genome build.")
   if (is.null(region)) {
-    chromosomes <- unique(unlist(lapply(samples, function(s) s$bins$chr)))
+    chromosomes <- unique(unlist(lapply(samples, function(s) c(s$bins$chr, s$segments$chr))))
     layout <- .genome_layout(builds, chromosomes)
   } else {
     region <- parse_ichor_region(region, builds)
@@ -79,11 +91,12 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
   }
 
   bins <- Map(function(s, id) {
-    d <- s$bins
+    d <- s$bins[c("chr", "start", "end", "logR")]
     if (is.null(region)) {
       d <- .add_genome_coordinates(d, layout)
     } else {
-      d <- .subset_interval(d, region)
+      # Keep the original bin midpoint, not a re-centered point after cropping.
+      d <- d[d$chr == region$chr & d$end >= region$start & d$start <= region$end, , drop = FALSE]
       d$x <- (d$start + d$end) / 2 / 1e6
     }
     d$sample <- rep(id, nrow(d))
@@ -92,6 +105,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
   segs <- Map(function(s, id) {
     d <- s$segments
     if (is.null(d)) return(NULL)
+    d <- d[c("chr", "start", "end", "median")]
     if (is.null(region)) {
       d <- .add_genome_coordinates(d, layout, segments = TRUE)
     } else {
@@ -109,7 +123,8 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
 
 #' Compare two or more ichorCNA profiles
 #'
-#' Overlays aligned bins and segments using one color per sample. This supports
+#' Overlays original bins and segments in shared coordinates, without rebinning.
+#' One color per sample supports
 #' paired fluids, longitudinal samples, technical replicates, and arbitrary
 #' genomic regions.
 #'
@@ -124,13 +139,17 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
   d <- .comparison_data(samples, region)
   if (!nrow(d$bins)) .ichor_abort("No bins overlap the requested region.", "ichorviz_region_error")
   if (is.null(colors)) colors <- stats::setNames(.default_sample_colors(length(samples)), names(samples))
-  if (!all(names(samples) %in% names(colors))) .ichor_abort("colors must be named for every sample.")
+  .check_colors(colors, names(samples))
+  if (!any(is.finite(d$bins$logR))) .ichor_abort("No finite logR values to plot.")
+  d$bins$sample <- factor(d$bins$sample, levels = names(samples))
+  if (!is.null(d$segments)) d$segments$sample <- factor(d$segments$sample, levels = names(samples))
 
   p <- ggplot2::ggplot(d$bins, ggplot2::aes(x = x, y = logR, color = sample)) +
     ggplot2::geom_hline(yintercept = 0, color = "grey60", linewidth = 0.35) +
     ggplot2::geom_point(size = point_size, alpha = 0.65, na.rm = TRUE) +
     ggplot2::scale_color_manual(values = colors[names(samples)]) +
-    ggplot2::labs(y = expression(log[2]~ratio), color = NULL) +
+    ggplot2::labs(y = expression(log[2]~ratio), color = NULL,
+                  subtitle = paste(d$build, paste(paste(names(samples), vapply(samples, .tf_label, character(1))), collapse = " | "), sep = " | ")) +
     .theme_ichor()
 
   if (!is.null(d$segments) && nrow(d$segments)) {
@@ -144,7 +163,7 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
     p <- p +
       ggplot2::geom_vline(xintercept = utils::head(d$layout$boundary, -1), color = "grey90", linewidth = 0.25) +
       ggplot2::scale_x_continuous(breaks = d$layout$mid, labels = d$layout$chr,
-                                  expand = ggplot2::expansion(mult = c(0.002, 0.002)))
+                                  limits = c(0, max(d$layout$boundary)), expand = ggplot2::expansion(mult = c(0.002, 0.002)))
   } else {
     p <- p +
       ggplot2::coord_cartesian(xlim = c(d$region$start, d$region$end) / 1e6) +
@@ -160,6 +179,7 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
 #' Plot a genomic region
 #'
 #' @inheritParams plot_ichor_compare
+#' @param region Required chromosome or `chr:start-end` interval.
 #' @return A `ggplot` object.
 #' @export
 plot_ichor_region <- function(samples, region, colors = NULL, point_size = 0.55) {

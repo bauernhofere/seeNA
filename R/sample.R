@@ -1,90 +1,133 @@
-# Sample object ------------------------------------------------------------
+.validate_intervals <- function(d, build, required, label) {
+  fail <- function(msg) .ichor_abort(paste(label, msg), "ichorviz_validation_error")
+  if (!is.data.frame(d) || !all(required %in% names(d)) || !nrow(d)) fail("has no rows or required columns.")
+  if (!is.character(d$chr) || anyNA(d$chr) || !all(d$chr %in% .chr_levels)) fail("has unsupported chromosomes.")
+  for (nm in c("start", "end")) {
+    v <- d[[nm]]
+    if (!is.numeric(v) || any(!is.finite(v) | v != floor(v))) fail("has non-integer or missing coordinates.")
+  }
+  limits <- .chromosome_sizes(build)
+  if (any(d$start < 1 | d$end < d$start | d$end > limits$length[match(d$chr, limits$chr)])) {
+    fail("has invalid or out-of-build coordinates; use bounds = 'trim' at import only for documented terminal overhangs.")
+  }
+  if (!identical(order(.chr_rank(d$chr), d$start, d$end), seq_len(nrow(d)))) fail("must be sorted in genomic order.")
+  if (nrow(d) > 1) {
+    same <- d$chr[-1] == d$chr[-nrow(d)]
+    if (any(same & d$start[-1] <= d$end[-nrow(d)])) fail("contains overlapping or duplicate intervals.")
+  }
+  for (nm in intersect(c("logR", "median", "copy_number", "corrected_copy_number", "logR_copy_number", "bins"), names(d))) {
+    v <- d[[nm]]
+    if (!is.numeric(v) || (nm != "logR_copy_number" && any(!is.na(v) & !is.finite(v)))) fail(paste("has invalid", nm))
+    if (nm %in% c("copy_number", "corrected_copy_number", "bins") && any(v < 0, na.rm = TRUE)) fail(paste("has negative", nm))
+  }
+  for (nm in intersect(c("event", "corrected_call"), names(d))) .normalize_call(d[[nm]])
+  if ("subclone_status" %in% names(d) && !is.logical(d$subclone_status)) fail("has non-logical subclone_status.")
+}
+
+.trim_terminal <- function(d, build, role) {
+  if (is.null(d)) return(list(data = NULL, changes = NULL))
+  sizes <- .chromosome_sizes(build)
+  limit <- sizes$length[match(d$chr, sizes$chr)]
+  hit <- which(is.finite(d$start) & is.finite(d$end) & d$start <= limit & d$end > limit)
+  changes <- NULL
+  if (length(hit)) {
+    changes <- data.frame(role = role, row = hit, chr = d$chr[hit], start = d$start[hit],
+                          original_end = d$end[hit], end = limit[hit])
+    d$end[hit] <- limit[hit]
+  }
+  list(data = d, changes = changes)
+}
 
 #' Construct a validated ichorCNA sample
 #'
+#' Companion source IDs must agree before a user alias is applied. This checks
+#' identity, not whether files came from the same fitted run: supply a single
+#' explicitly chosen run. Missing scientific values are retained.
 #' @param cna_seg Path to a `.cna.seg` file.
-#' @param seg Optional path to a `.seg` file.
-#' @param params Optional path to a `.params.txt` file.
-#' @param genome_build Genome build, currently `"hg19"` or `"hg38"`.
-#' @param sample_id Optional sample identifier.
-#' @return An object of class `ichor_sample`.
+#' @param seg Optional segment file.
+#' @param params Optional parameter file.
+#' @param genome_build Explicit `"hg19"` or `"hg38"`.
+#' @param sample_id Optional output alias; source identities are still checked.
+#' @param retain_paths Retain absolute source paths? Default FALSE.
+#' @param bounds `"error"` rejects out-of-build intervals. Explicit `"trim"`
+#'   clips intervals straddling chromosome ends and records every change. Never
+#'   use trimming as a substitute for checking the reference build.
+#' @return A validated `ichor_sample` with schema version 1 and import fingerprints.
 #' @export
-read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL,
-                              genome_build, sample_id = NULL) {
+read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
+                              sample_id = NULL, retain_paths = FALSE,
+                              bounds = c("error", "trim")) {
   genome_build <- match.arg(genome_build, c("hg19", "hg38"))
-  bins <- read_ichor_cna(cna_seg, sample_id = sample_id)
-  segments <- if (is.null(seg) || is.na(seg) || !nzchar(seg)) NULL else read_ichor_segments(seg)
-  parameters <- if (is.null(params) || is.na(params) || !nzchar(params)) NULL else read_ichor_params(params)
-  id <- sample_id %||% attr(bins, "sample_id") %||%
-    if (!is.null(parameters)) parameters$sample_id[1] else NULL
-
-  x <- structure(
-    list(
-      sample_id = as.character(id),
-      genome_build = genome_build,
-      bins = bins,
-      segments = segments,
-      params = parameters,
-      provenance = list(
-        cna_seg = attr(bins, "source"),
-        seg = if (!is.null(segments)) attr(segments, "source") else NULL,
-        params = if (!is.null(parameters)) normalizePath(params, mustWork = TRUE) else NULL
-      )
-    ),
-    class = "ichor_sample"
-  )
+  bounds <- match.arg(bounds)
+  .flag(retain_paths, "retain_paths")
+  absent <- function(p) is.null(p) || (length(p) == 1L && (is.na(p) || !nzchar(p)))
+  paths <- c(cna_seg = .assert_file(cna_seg, "cna_seg"))
+  if (!absent(seg)) paths <- c(paths, seg = .assert_file(seg, "seg"))
+  if (!absent(params)) paths <- c(paths, params = .assert_file(params, "params"))
+  before <- .fingerprint(paths)
+  bins <- read_ichor_cna(paths[["cna_seg"]])
+  segments <- if ("seg" %in% names(paths)) read_ichor_segments(paths[["seg"]]) else NULL
+  parameters <- if ("params" %in% names(paths)) read_ichor_params(paths[["params"]]) else NULL
+  source_ids <- unique(c(attr(bins, "source_id"), attr(segments, "source_id"), parameters$sample_id))
+  if (length(source_ids) != 1L || is.na(source_ids) || !nzchar(source_ids)) {
+    .ichor_abort("Source sample IDs disagree across bins, segments, or parameters.", "ichorviz_identity_error")
+  }
+  id <- sample_id %||% source_ids
+  if (!is.character(id) || length(id) != 1L || is.na(id) || !nzchar(trimws(id))) .ichor_abort("sample_id must be a non-empty character scalar.")
+  after <- .fingerprint(paths)
+  if (!identical(before, after)) .ichor_abort("Input files changed while being read.", "ichorviz_file_error")
+  attr(bins, "source_id") <- attr(bins, "sample_id") <- NULL
+  if (!is.null(segments)) {
+    segments$sample_id <- NULL
+    attr(segments, "source_id") <- NULL
+  }
+  if (!is.null(parameters)) parameters$sample_id <- id
+  changes <- NULL
+  if (bounds == "trim") {
+    b <- .trim_terminal(bins, genome_build, "bins")
+    s <- .trim_terminal(segments, genome_build, "segments")
+    bins <- b$data; segments <- s$data
+    changes <- rbind(b$changes, s$changes)
+    if (!is.null(changes)) warning(sprintf("Trimmed %d terminal intervals; see coordinate_changes.", nrow(changes)), call. = FALSE)
+  }
+  before$sample_id <- id
+  before$genome_build <- genome_build
+  before$package_version <- as.character(utils::packageVersion("ichorViz"))
+  before$schema_version <- 1L
+  before$coordinate_policy <- bounds
+  if (retain_paths) before$path <- unname(paths)
+  x <- structure(list(schema_version = 1L, sample_id = id, genome_build = genome_build,
+                      bins = bins, segments = segments, params = parameters,
+                      coordinate_policy = bounds, coordinate_changes = changes,
+                      provenance = before), class = "ichor_sample")
   validate_ichor_sample(x)
   x
 }
 
 #' Validate an ichorCNA sample
-#'
 #' @param x An `ichor_sample` object.
-#' @return `x`, invisibly. Invalid samples raise an error.
+#' @return `x`, invisibly; invalid objects raise classed errors.
 #' @export
 validate_ichor_sample <- function(x) {
-  if (!inherits(x, "ichor_sample")) .ichor_abort("x must be an ichor_sample.")
-  if (length(x$sample_id) != 1L || is.na(x$sample_id) || !nzchar(x$sample_id)) {
-    .ichor_abort("sample_id must be a non-empty scalar.", "ichorviz_validation_error")
+  if (!inherits(x, "ichor_sample") || !identical(x$schema_version, 1L)) .ichor_abort("Expected ichor_sample schema version 1.")
+  if (!is.character(x$sample_id) || length(x$sample_id) != 1L || is.na(x$sample_id) || !nzchar(x$sample_id)) {
+    .ichor_abort("Invalid sample_id.", "ichorviz_validation_error")
   }
-  if (!x$genome_build %in% c("hg19", "hg38")) {
-    .ichor_abort("genome_build must be hg19 or hg38.", "ichorviz_validation_error")
-  }
-  bins <- x$bins
-  if (!nrow(bins)) .ichor_abort("The sample has no bins.", "ichorviz_validation_error")
-  bad_chr <- setdiff(unique(bins$chr), .chr_levels)
-  if (length(bad_chr)) {
-    .ichor_abort(sprintf("Unsupported chromosome%s: %s",
-                         if (length(bad_chr) > 1) "s" else "",
-                         paste(bad_chr, collapse = ", ")),
-                 "ichorviz_validation_error")
-  }
-  if (any(!is.finite(bins$start) | !is.finite(bins$end) |
-          bins$start < 1 | bins$end < bins$start)) {
-    .ichor_abort("Bins contain invalid coordinates.", "ichorviz_validation_error")
-  }
-  key <- paste(bins$chr, bins$start, bins$end, sep = ":")
-  if (anyDuplicated(key)) .ichor_abort("Bins contain duplicate intervals.", "ichorviz_validation_error")
-  by_chr <- split(bins, bins$chr)
-  overlaps <- vapply(by_chr, function(d) {
-    d <- d[order(d$start, d$end), , drop = FALSE]
-    nrow(d) > 1L && any(d$start[-1] <= d$end[-nrow(d)])
-  }, logical(1))
-  if (any(overlaps)) {
-    .ichor_abort(sprintf("Bins overlap on chromosome%s %s.",
-                         if (sum(overlaps) > 1) "s" else "",
-                         paste(names(overlaps)[overlaps], collapse = ", ")),
-                 "ichorviz_validation_error")
-  }
+  if (length(x$genome_build) != 1L || !x$genome_build %in% c("hg19", "hg38")) .ichor_abort("Invalid genome_build.")
+  .validate_intervals(x$bins, x$genome_build, c("chr", "start", "end", "logR"), "Bins")
+  if (!is.null(x$segments)) .validate_intervals(x$segments, x$genome_build, c("chr", "start", "end", "median"), "Segments")
   if (!is.null(x$params)) {
-    tf <- x$params$tumor_fraction[1]
-    if (!is.na(tf) && (tf < 0 || tf > 1)) {
-      .ichor_abort("Tumor fraction must be expressed as a fraction in [0, 1].",
-                   "ichorviz_validation_error")
+    p <- x$params
+    if (!is.data.frame(p) || nrow(p) != 1L ||
+        !all(c("sample_id", "tumor_fraction", "ploidy") %in% names(p)) || !identical(p$sample_id, x$sample_id)) {
+      .ichor_abort("Invalid parameter table or sample identity.", "ichorviz_validation_error")
     }
-    ploidy <- x$params$ploidy[1]
-    if (!is.na(ploidy) && ploidy <= 0) {
-      .ichor_abort("Ploidy must be positive.", "ichorviz_validation_error")
+    tf <- p$tumor_fraction; ploidy <- p$ploidy
+    if (!is.numeric(tf) || any(!is.na(tf) & (!is.finite(tf) | tf < 0 | tf > 1))) {
+      .ichor_abort("Tumor fraction must be a fraction in [0, 1].", "ichorviz_validation_error")
+    }
+    if (!is.numeric(ploidy) || any(!is.na(ploidy) & (!is.finite(ploidy) | ploidy <= 0))) {
+      .ichor_abort("Ploidy must be positive and finite.", "ichorviz_validation_error")
     }
   }
   invisible(x)
@@ -93,10 +136,7 @@ validate_ichor_sample <- function(x) {
 #' @export
 print.ichor_sample <- function(x, ...) {
   tf <- if (is.null(x$params)) NA_real_ else x$params$tumor_fraction[1]
-  cat(sprintf("<ichor_sample> %s\n", x$sample_id))
-  cat(sprintf("  genome:   %s\n", x$genome_build))
-  cat(sprintf("  bins:     %s\n", format(nrow(x$bins), big.mark = ",")))
-  cat(sprintf("  segments: %s\n", if (is.null(x$segments)) "not loaded" else nrow(x$segments)))
-  cat(sprintf("  TF:       %s\n", if (is.na(tf)) "not available" else sprintf("%.3f", tf)))
+  cat(sprintf("<ichor_sample> %s\n  genome: %s\n  bins: %d\n  TF: %s\n", x$sample_id,
+              x$genome_build, nrow(x$bins), if (is.na(tf)) "not available" else sprintf("%.3f", tf)))
   invisible(x)
 }

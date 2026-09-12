@@ -7,11 +7,12 @@
 read_ichor_segments(path)
 }
 \arguments{
-\item{path}{Path to an ichorCNA \code{.seg} file.}
+\item{path}{Path to a segment file.}
 }
 \value{
 A data frame with normalized segment columns.
 }
 \description{
-Read an ichorCNA segment file
+Supports v0.4 \code{.seg} and its separate \code{.seg.txt} export. The latter uses
+\code{chrom}, \code{num.mark}, and \code{seg.median.logR} headers.
 }

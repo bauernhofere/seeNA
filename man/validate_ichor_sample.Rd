@@ -10,7 +10,7 @@ validate_ichor_sample(x)
 \item{x}{An \code{ichor_sample} object.}
 }
 \value{
-\code{x}, invisibly. Invalid samples raise an error.
+\code{x}, invisibly; invalid objects raise classed errors.
 }
 \description{
 Validate an ichorCNA sample

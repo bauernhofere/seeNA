@@ -12,6 +12,8 @@ jobs:
       matrix:
         config:
           - {os: macos-latest, r: release}
+          - {os: windows-latest, r: release}
+          - {os: ubuntu-latest, r: oldrel-1}
           - {os: ubuntu-latest, r: release}
           - {os: ubuntu-latest, r: devel}
     env:
@@ -27,4 +29,9 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
+      - name: Verify generated documentation
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: |
+          Rscript -e 'roxygen2::roxygenise()'
+          git diff --exit-code -- man NAMESPACE
       - uses: r-lib/actions/check-r-package@v2

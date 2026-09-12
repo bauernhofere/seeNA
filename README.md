@@ -11,11 +11,22 @@ or longitudinal comparisons, and cohort-scale bin matrices and heatmaps.
 
 It does **not** run ichorCNA or call copy-number alterations.
 
+**Pre-release:** the repository is private and this development version is not
+an archived/citable release. See [scientific contracts](docs/data-contracts.md)
+and [review/release gates](docs/review-triage.md). The checks below do not replace
+real-input reconciliation and author review of manuscript figures.
+
 ## Installation
 
 ```r
 # install.packages("remotes")
+# Requires access to the private repository; pin an approved commit for analysis.
 remotes::install_github("bauernhofere/ichorViz")
+
+# Optional cohort heatmaps:
+# install.packages("BiocManager")
+# BiocManager::install(c("ComplexHeatmap", "circlize"))
+# install.packages("ragg")
 ```
 
 ## One sample
@@ -66,13 +77,48 @@ cohort <- read_ichor_cohort(
 )
 
 mat <- ichor_matrix(cohort, bin_size = 1e6, value = "corrected_copy_number")
-plot_ichor_heatmap(mat, annotation_columns = c("condition", "timepoint"))
+h <- plot_ichor_heatmap(mat, annotation_columns = c("condition", "timepoint"))
+ComplexHeatmap::draw(h)
 ```
 
 The included examples are generated format fixtures with no clinical or
 biological interpretation.
 
+## Scientific defaults
+
+- `value` is required for a matrix; `call_column` never falls back silently.
+- Missing calls are NA; unsupported tokens are errors, not neutral calls.
+- Continuous values use overlap-weighted means. Categorical calls use base-pair
+  mode (ties -> NA); inspect `mat$mixed` for heterogeneous bins.
+- `mat$coverage` reports observed support. Default `min_coverage = 1` requires
+  full target coverage, including shortened chromosome-end bins.
+- Genome bounds are strict. If you have verified terminal bin padding in the
+  source output, use `bounds = "trim"` at import and inspect `coordinate_changes`.
+- Heatmaps retain manifest order; clustering is explicit and uses common observed
+  bins without imputation. CN 2 is a visual reference, not an inferred baseline.
+- Source component IDs must match before aliases are applied. You must choose
+  the same ichorCNA run for all components; matching IDs cannot verify the run.
+- Provenance fingerprints are captured at import; paths require
+  `retain_paths = TRUE`. Neither aliases nor path redaction anonymize genomic data.
+
+## Development and manuscript use
+
+```bash
+make bootstrap  # installs development dependencies; network required
+make test
+make check
+```
+
+Use real clinical inputs outside this repository. Record `sessionInfo()`, the
+package commit, `ichor_provenance(cohort)`, the selected run, genome build,
+coordinate changes, matrix settings and plotting options alongside manuscript
+outputs in an access-controlled location. No public data upload is required.
+For an accessible software citation, an author-approved public release/archive
+is still needed; cite the original ichorCNA paper separately:
+[Adalsteinsson, Ha, Freeman et al. (2017)](https://doi.org/10.1038/s41467-017-00965-y).
+
 ## License and attribution
 
 ichorViz is GPL-3-or-later and is not an official ichorCNA component. See
-[NOTICE.md](NOTICE.md) for upstream provenance and attribution.
+[NOTICE.md](NOTICE.md) for upstream provenance and attribution. A copy ships
+with the installed package at `system.file("NOTICE.md", package = "ichorViz")`.

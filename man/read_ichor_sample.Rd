@@ -9,23 +9,33 @@ read_ichor_sample(
   seg = NULL,
   params = NULL,
   genome_build,
-  sample_id = NULL
+  sample_id = NULL,
+  retain_paths = FALSE,
+  bounds = c("error", "trim")
 )
 }
 \arguments{
 \item{cna_seg}{Path to a \code{.cna.seg} file.}
 
-\item{seg}{Optional path to a \code{.seg} file.}
+\item{seg}{Optional segment file.}
 
-\item{params}{Optional path to a \code{.params.txt} file.}
+\item{params}{Optional parameter file.}
 
-\item{genome_build}{Genome build, currently \code{"hg19"} or \code{"hg38"}.}
+\item{genome_build}{Explicit \code{"hg19"} or \code{"hg38"}.}
 
-\item{sample_id}{Optional sample identifier.}
+\item{sample_id}{Optional output alias; source identities are still checked.}
+
+\item{retain_paths}{Retain absolute source paths? Default FALSE.}
+
+\item{bounds}{\code{"error"} rejects out-of-build intervals. Explicit \code{"trim"}
+clips intervals straddling chromosome ends and records every change. Never
+use trimming as a substitute for checking the reference build.}
 }
 \value{
-An object of class \code{ichor_sample}.
+A validated \code{ichor_sample} with schema version 1 and import fingerprints.
 }
 \description{
-Construct a validated ichorCNA sample
+Companion source IDs must agree before a user alias is applied. This checks
+identity, not whether files came from the same fitted run: supply a single
+explicitly chosen run. Missing scientific values are retained.
 }

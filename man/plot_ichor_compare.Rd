@@ -19,7 +19,8 @@ plot_ichor_compare(samples, region = NULL, colors = NULL, point_size = 0.4)
 A \code{ggplot} object.
 }
 \description{
-Overlays aligned bins and segments using one color per sample. This supports
+Overlays original bins and segments in shared coordinates, without rebinning.
+One color per sample supports
 paired fluids, longitudinal samples, technical replicates, and arbitrary
 genomic regions.
 }

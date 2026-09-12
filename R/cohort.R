@@ -1,165 +1,106 @@
-# Cohorts and aligned matrices --------------------------------------------
-
 .resolve_manifest_path <- function(path, root) {
   if (is.na(path) || !nzchar(path)) return(NA_character_)
   expanded <- path.expand(path)
-  if (!grepl("^(/|[A-Za-z]:[/\\\\])", expanded)) expanded <- file.path(root, expanded)
+  if (!grepl("^(/|[A-Za-z]:[/\\\\])", expanded)) {
+    if (is.null(root)) .ichor_abort("Relative paths in a data-frame manifest require root.", "ichorviz_manifest_error")
+    expanded <- file.path(root, expanded)
+  }
   normalizePath(expanded, mustWork = FALSE)
 }
 
 #' Read a cohort manifest
 #'
-#' The manifest must contain `sample_id` and `cna_seg`. Optional `seg` and
-#' `params` columns identify companion files; all other columns are retained as
-#' sample metadata. Relative paths are resolved from the manifest's directory.
-#'
-#' @param manifest Path to a CSV/TSV manifest or a data frame.
-#' @param genome_build Genome build shared by the cohort.
-#' @param workers Number of file-reading processes. Values above one use
-#'   `parallel::mclapply()` on Unix-like systems.
-#' @return An `ichor_cohort` object.
+#' Required columns: `sample_id`, `cna_seg`; optional: `seg`, `params`.
+#' Other columns are user-supplied plot annotations, not automatically safe to
+#' share. Manifest IDs are aliases; companion source identities are still checked.
+#' Loading is atomic: any failed sample aborts the entire import.
+#' @param manifest CSV/TSV path or data frame.
+#' @param genome_build Explicit shared build.
+#' @param workers Positive integer; Unix uses fork workers, Windows sequential.
+#' @param root Required for relative paths in a data-frame manifest. File manifests
+#'   resolve paths against their own directory.
+#' @param retain_paths Retain absolute paths in sample provenance? Default FALSE.
+#' @param bounds Interval bounds policy passed to [read_ichor_sample()].
+#' @param metadata_columns Optional annotation allowlist; NULL retains all
+#'   non-file columns. `character()` retains only sample_id.
+#' @return A validated `ichor_cohort` in manifest order.
 #' @export
-read_ichor_cohort <- function(manifest, genome_build, workers = 1L) {
+read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
+                              retain_paths = FALSE, bounds = c("error", "trim"),
+                              metadata_columns = NULL) {
   genome_build <- match.arg(genome_build, c("hg19", "hg38"))
+  bounds <- match.arg(bounds)
+  .scalar(workers, "workers", integer = TRUE, lower = 1, upper = .Machine$integer.max)
+  .flag(retain_paths, "retain_paths")
   if (is.character(manifest) && length(manifest) == 1L) {
     path <- .assert_file(manifest, "manifest")
     root <- dirname(path)
-    tab <- data.table::fread(path, data.table = FALSE, check.names = FALSE)
+    tab <- data.table::fread(file = path, data.table = FALSE, check.names = FALSE,
+                            colClasses = list(character = "sample_id"))
   } else if (is.data.frame(manifest)) {
     tab <- as.data.frame(manifest, stringsAsFactors = FALSE)
-    root <- getwd()
-  } else {
-    .ichor_abort("manifest must be a path or data frame.", "ichorviz_manifest_error")
+  } else .ichor_abort("manifest must be a file path or data frame.", "ichorviz_manifest_error")
+  if (!all(c("sample_id", "cna_seg") %in% names(tab)) || anyDuplicated(names(tab))) {
+    .ichor_abort("Manifest needs unique columns including sample_id and cna_seg.", "ichorviz_manifest_error")
   }
-  required <- c("sample_id", "cna_seg")
-  missing <- setdiff(required, names(tab))
-  if (length(missing)) .ichor_abort(sprintf("Manifest is missing: %s", paste(missing, collapse = ", ")),
-                                     "ichorviz_manifest_error")
-  if (!nrow(tab) || anyNA(tab$sample_id) || any(!nzchar(tab$sample_id)) || anyDuplicated(tab$sample_id)) {
-    .ichor_abort("Manifest sample_id values must be non-empty and unique.", "ichorviz_manifest_error")
+  tab$sample_id <- as.character(tab$sample_id)
+  if (!nrow(tab) || anyNA(tab$sample_id) || any(!nzchar(trimws(tab$sample_id))) || anyDuplicated(tab$sample_id)) {
+    .ichor_abort("Manifest IDs must be non-empty and unique.", "ichorviz_manifest_error")
   }
-  for (nm in intersect(c("cna_seg", "seg", "params"), names(tab))) {
-    tab[[nm]] <- vapply(as.character(tab[[nm]]), .resolve_manifest_path, character(1), root = root)
-  }
-
+  file_cols <- intersect(c("cna_seg", "seg", "params"), names(tab))
+  for (nm in file_cols) tab[[nm]] <- vapply(as.character(tab[[nm]]), .resolve_manifest_path, character(1), root = root)
+  available <- setdiff(names(tab), file_cols)
+  if (!is.null(metadata_columns) && !all(metadata_columns %in% available)) .ichor_abort("Unknown metadata columns.")
+  metadata <- tab[unique(c("sample_id", metadata_columns %||% available))]
+  # character() is an intentional empty annotation allowlist, not a default.
+  if (identical(metadata_columns, character())) metadata <- tab["sample_id"]
   load_one <- function(i) {
-    read_ichor_sample(
-      cna_seg = tab$cna_seg[i],
+    tryCatch(list(sample = read_ichor_sample(tab$cna_seg[i],
       seg = if ("seg" %in% names(tab)) tab$seg[i] else NULL,
       params = if ("params" %in% names(tab)) tab$params[i] else NULL,
-      genome_build = genome_build,
-      sample_id = tab$sample_id[i]
-    )
+      genome_build = genome_build, sample_id = tab$sample_id[i],
+      retain_paths = retain_paths, bounds = bounds)),
+      error = function(e) list(error = conditionMessage(e)))
   }
-  workers <- as.integer(workers)
-  if (!is.finite(workers) || workers < 1L) .ichor_abort("workers must be a positive integer.")
   if (workers > 1L && .Platform$OS.type != "windows") {
-    samples <- parallel::mclapply(seq_len(nrow(tab)), load_one, mc.cores = workers)
+    results <- parallel::mclapply(seq_len(nrow(tab)), load_one, mc.cores = min(workers, nrow(tab)))
   } else {
-    if (workers > 1L) warning("Parallel manifest loading currently falls back to sequential on Windows.", call. = FALSE)
-    samples <- lapply(seq_len(nrow(tab)), load_one)
+    if (workers > 1L) warning("Windows uses sequential file loading.", call. = FALSE)
+    results <- lapply(seq_len(nrow(tab)), load_one)
   }
+  ok <- vapply(results, function(r) is.list(r) && inherits(r$sample, "ichor_sample"), logical(1))
+  if (!all(ok)) {
+    details <- vapply(which(!ok), function(i) {
+      reason <- if (is.list(results[[i]])) results[[i]]$error else "Worker failure"
+      sprintf("row %d (%s): %s", i, tab$sample_id[i], reason %||% "Worker failure")
+    }, character(1))
+    .ichor_abort(paste("Cohort import aborted:", paste(details, collapse = "; ")), "ichorviz_manifest_error")
+  }
+  samples <- lapply(results, `[[`, "sample")
   names(samples) <- tab$sample_id
-  metadata <- tab[setdiff(names(tab), c("cna_seg", "seg", "params"))]
-  structure(list(samples = samples, metadata = metadata, genome_build = genome_build,
-                 manifest = if (exists("path")) path else NULL), class = "ichor_cohort")
+  x <- structure(list(schema_version = 1L, samples = samples, metadata = metadata,
+                      genome_build = genome_build), class = "ichor_cohort")
+  validate_ichor_cohort(x)
+  x
+}
+
+#' Validate a cohort
+#' @param x An `ichor_cohort`.
+#' @return `x`, invisibly.
+#' @export
+validate_ichor_cohort <- function(x) {
+  if (!inherits(x, "ichor_cohort") || !identical(x$schema_version, 1L) ||
+      !is.list(x$samples) || !length(x$samples) || !is.data.frame(x$metadata)) .ichor_abort("Invalid cohort object.")
+  lapply(x$samples, validate_ichor_sample)
+  ids <- vapply(x$samples, `[[`, character(1), "sample_id")
+  if (anyDuplicated(ids) || !identical(names(x$samples), unname(ids)) ||
+      !identical(x$metadata$sample_id, unname(ids))) .ichor_abort("Cohort sample and metadata order disagree.")
+  if (!all(vapply(x$samples, function(s) identical(s$genome_build, x$genome_build), logical(1)))) .ichor_abort("Cohort genome builds disagree.")
+  invisible(x)
 }
 
 #' @export
 print.ichor_cohort <- function(x, ...) {
-  cat("<ichor_cohort>\n")
-  cat(sprintf("  samples: %s\n", length(x$samples)))
-  cat(sprintf("  genome:  %s\n", x$genome_build))
-  invisible(x)
-}
-
-.rebin_sample <- function(sample, bin_size, value) {
-  d <- sample$bins
-  if (value == "call") {
-    call_col <- if ("corrected_call" %in% names(d)) "corrected_call" else "event"
-    if (is.null(call_col) || !call_col %in% names(d)) .ichor_abort("No call column is available.")
-    d$value <- .call_score(d[[call_col]])
-  } else {
-    if (!value %in% names(d)) .ichor_abort(sprintf("%s is unavailable for %s.", value, sample$sample_id))
-    d$value <- .as_number(d[[value]])
-  }
-  d <- d[!is.na(d$value), c("chr", "start", "end", "value"), drop = FALSE]
-  if (!nrow(d)) return(data.frame(chr = character(), bin_index = numeric(), value = numeric()))
-
-  first <- floor((d$start - 1) / bin_size)
-  last <- floor((d$end - 1) / bin_size)
-  counts <- last - first + 1
-  source_row <- rep.int(seq_len(nrow(d)), counts)
-  bin_index <- if (all(counts == 1)) first else
-    unlist(Map(seq.int, first, last), use.names = FALSE)
-  target_start <- bin_index * bin_size + 1
-  target_end <- (bin_index + 1) * bin_size
-  overlap <- pmax(0, pmin(d$end[source_row], target_end) -
-                    pmax(d$start[source_row], target_start) + 1)
-  chr <- d$chr[source_row]
-  weighted <- d$value[source_row] * overlap
-  key <- paste(chr, bin_index, sep = ":")
-
-  if (!anyDuplicated(key)) {
-    return(data.frame(chr = chr, bin_index = bin_index, value = weighted / overlap))
-  }
-  unique_key <- unique(key)
-  group <- match(key, unique_key)
-  first_row <- match(unique_key, key)
-  numerator <- as.numeric(rowsum(weighted, group, reorder = FALSE))
-  denominator <- as.numeric(rowsum(overlap, group, reorder = FALSE))
-  data.frame(chr = chr[first_row], bin_index = bin_index[first_row],
-             value = numerator / denominator)
-}
-
-#' Build an aligned cohort bin matrix
-#'
-#' Source bins are assigned to fixed genomic bins using overlap-weighted values.
-#'
-#' @param cohort An `ichor_cohort`.
-#' @param bin_size Target bin width in base pairs.
-#' @param value One of `"logR"`, `"corrected_copy_number"`, `"copy_number"`,
-#'   or `"call"`. Calls are encoded as deep loss `-2`, loss `-1`, neutral `0`,
-#'   and gain `1`.
-#' @return An `ichor_matrix` containing `values`, genomic `bins`, and sample
-#'   metadata.
-#' @export
-ichor_matrix <- function(cohort, bin_size = 1e6,
-                         value = c("logR", "corrected_copy_number", "copy_number", "call")) {
-  if (!inherits(cohort, "ichor_cohort")) .ichor_abort("cohort must be an ichor_cohort.")
-  value <- match.arg(value)
-  bin_size <- as.numeric(bin_size)
-  if (!is.finite(bin_size) || bin_size <= 0) .ichor_abort("bin_size must be positive.")
-
-  sizes <- .chromosome_sizes(cohort$genome_build)
-  grid <- do.call(rbind, lapply(seq_len(nrow(sizes)), function(i) {
-    idx <- 0:(ceiling(sizes$length[i] / bin_size) - 1)
-    data.frame(chr = sizes$chr[i], bin_index = idx,
-               start = idx * bin_size + 1,
-               end = pmin((idx + 1) * bin_size, sizes$length[i]))
-  }))
-  grid$key <- paste(grid$chr, grid$bin_index, sep = ":")
-  grid$label <- sprintf("chr%s:%s-%s", grid$chr, grid$start, grid$end)
-
-  mat <- matrix(NA_real_, nrow = length(cohort$samples), ncol = nrow(grid),
-                dimnames = list(names(cohort$samples), grid$label))
-  for (i in seq_along(cohort$samples)) {
-    d <- .rebin_sample(cohort$samples[[i]], bin_size, value)
-    key <- paste(d$chr, d$bin_index, sep = ":")
-    j <- match(key, grid$key)
-    mat[i, j[!is.na(j)]] <- d$value[!is.na(j)]
-  }
-  grid$key <- NULL
-  structure(list(values = mat, bins = grid, samples = cohort$metadata,
-                 genome_build = cohort$genome_build, bin_size = bin_size, value = value),
-            class = "ichor_matrix")
-}
-
-#' @export
-print.ichor_matrix <- function(x, ...) {
-  cat("<ichor_matrix>\n")
-  cat(sprintf("  dimensions: %s samples x %s bins\n", nrow(x$values), ncol(x$values)))
-  cat(sprintf("  value:      %s\n", x$value))
-  cat(sprintf("  bin size:   %s bp\n", format(x$bin_size, big.mark = ",", scientific = FALSE)))
+  cat(sprintf("<ichor_cohort>\n  samples: %d\n  genome: %s\n", length(x$samples), x$genome_build))
   invisible(x)
 }

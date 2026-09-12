@@ -4,21 +4,39 @@
 \alias{read_ichor_cohort}
 \title{Read a cohort manifest}
 \usage{
-read_ichor_cohort(manifest, genome_build, workers = 1L)
+read_ichor_cohort(
+  manifest,
+  genome_build,
+  workers = 1L,
+  root = NULL,
+  retain_paths = FALSE,
+  bounds = c("error", "trim"),
+  metadata_columns = NULL
+)
 }
 \arguments{
-\item{manifest}{Path to a CSV/TSV manifest or a data frame.}
+\item{manifest}{CSV/TSV path or data frame.}
 
-\item{genome_build}{Genome build shared by the cohort.}
+\item{genome_build}{Explicit shared build.}
 
-\item{workers}{Number of file-reading processes. Values above one use
-\code{parallel::mclapply()} on Unix-like systems.}
+\item{workers}{Positive integer; Unix uses fork workers, Windows sequential.}
+
+\item{root}{Required for relative paths in a data-frame manifest. File manifests
+resolve paths against their own directory.}
+
+\item{retain_paths}{Retain absolute paths in sample provenance? Default FALSE.}
+
+\item{bounds}{Interval bounds policy passed to \code{\link[=read_ichor_sample]{read_ichor_sample()}}.}
+
+\item{metadata_columns}{Optional annotation allowlist; NULL retains all
+non-file columns. \code{character()} retains only sample_id.}
 }
 \value{
-An \code{ichor_cohort} object.
+A validated \code{ichor_cohort} in manifest order.
 }
 \description{
-The manifest must contain \code{sample_id} and \code{cna_seg}. Optional \code{seg} and
-\code{params} columns identify companion files; all other columns are retained as
-sample metadata. Relative paths are resolved from the manifest's directory.
+Required columns: \code{sample_id}, \code{cna_seg}; optional: \code{seg}, \code{params}.
+Other columns are user-supplied plot annotations, not automatically safe to
+share. Manifest IDs are aliases; companion source identities are still checked.
+Loading is atomic: any failed sample aborts the entire import.
 }

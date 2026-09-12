@@ -9,7 +9,7 @@ plot_ichor_region(samples, region, colors = NULL, point_size = 0.55)
 \arguments{
 \item{samples}{An \code{ichor_sample} or list of samples.}
 
-\item{region}{Optional \code{chr:start-end} region. The default is genome-wide.}
+\item{region}{Required chromosome or \code{chr:start-end} interval.}
 
 \item{colors}{Optional named vector of sample colors.}
 

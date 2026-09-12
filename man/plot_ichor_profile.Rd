@@ -12,9 +12,11 @@ plot_ichor_profile(
 )
 }
 \arguments{
-\item{x}{An \code{ichor_sample}.}
+\item{x}{An \code{ichor_sample}.
+Segment medians are drawn in grey: raw segment events must not share the
+corrected bin-call legend. No purity/ploidy adjustment is performed here.}
 
-\item{call_column}{Column used to color copy-number states.}
+\item{call_column}{Bin column used to color states; no implicit fallback.}
 
 \item{colors}{Named state color vector.}
 

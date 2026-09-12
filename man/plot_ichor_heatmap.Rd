@@ -7,27 +7,40 @@
 plot_ichor_heatmap(
   x,
   annotation_columns = NULL,
-  cluster_rows = TRUE,
-  show_row_names = nrow(x$values) <= 100,
-  colors = NULL
+  cluster_rows = FALSE,
+  show_row_names = FALSE,
+  colors = NULL,
+  annotation_colors = NULL,
+  row_order = NULL,
+  na_col = "#D9D9D9"
 )
 }
 \arguments{
 \item{x}{An \code{ichor_matrix}.}
 
-\item{annotation_columns}{Optional columns from the cohort metadata to show
-as row annotations.}
+\item{annotation_columns}{Metadata columns to show as row annotations.}
 
-\item{cluster_rows}{Whether to cluster samples.}
+\item{cluster_rows}{Explicitly cluster samples? Default FALSE.}
 
-\item{show_row_names}{Whether to display sample identifiers.}
+\item{show_row_names}{Display sample aliases? Default FALSE.}
 
-\item{colors}{Optional color function. Defaults depend on the matrix value.}
+\item{colors}{Custom continuous color function or named discrete call colors.}
+
+\item{annotation_colors}{Named list of annotation palettes/color functions.}
+
+\item{row_order}{Optional permutation of sample aliases. Mutually exclusive
+with clustering.}
+
+\item{na_col}{Color for missing, insufficiently covered or tied values.}
 }
 \value{
-A \code{ComplexHeatmap::Heatmap} object.
+An undrawn \code{ComplexHeatmap::Heatmap} object. Use
+\code{ComplexHeatmap::draw()} to render it on the caller's device.
 }
 \description{
-Uses ComplexHeatmap when installed. Samples are rows and ordered genomic bins
-are columns split by chromosome.
+Default row order is manifest order. Optional clustering uses Euclidean
+distances and complete linkage on columns observed in every sample (at least
+two required), without imputation. Calls use discrete colors; continuous
+default scales include the observed range. CN 2 is a visual reference, not a
+neutrality call; sex-chromosome baseline and fitted ploidy may differ.
 }

@@ -7,16 +7,15 @@
 read_ichor_cna(path, sample_id = NULL)
 }
 \arguments{
-\item{path}{Path to an ichorCNA \code{.cna.seg} file.}
+\item{path}{Path to a \code{.cna.seg} file.}
 
-\item{sample_id}{Optional sample identifier. By default it is inferred from
-prefixed columns or the filename.}
+\item{sample_id}{Optional output alias, not a selector for multi-sample files.}
 }
 \value{
-A data frame with normalized bin-level columns and a \code{sample_id}
-attribute.
+Normalized data frame with \code{sample_id} and \code{source_id} attributes.
 }
 \description{
-Reads a \code{.cna.seg} file and normalizes both ordinary and sample-prefixed
-column names to a stable schema.
+Accepts one sample per file. Mixed sample prefixes and duplicate semantic
+columns are errors. Missing scientific values remain NA; malformed values
+are errors. Coordinates are 1-based closed intervals.
 }

@@ -52,6 +52,9 @@ parse_ichor_region <- function(region, genome_build) {
     .ichor_abort("region must be a non-empty scalar.", "ichorviz_region_error")
   }
   clean <- gsub("[,]", "", trimws(region))
+  if (!grepl("^(chr)?([0-9]+|X|Y)(:[0-9]+-[0-9]+)?$", clean, ignore.case = TRUE)) {
+    .ichor_abort("Use chromosome or chr:start-end with integer coordinates.", "ichorviz_region_error")
+  }
   pieces <- strsplit(clean, ":", fixed = TRUE)[[1]]
   chr <- .normalize_chr(pieces[1])
   sizes <- .chromosome_sizes(genome_build)
