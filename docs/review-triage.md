@@ -26,8 +26,10 @@ calls, intervals, pairing, annotations, or provenance are correct.
   guarantee. The package must not import unrelated clinical spreadsheets.
 - Chromosome bounds require care: the real canonical input files contain
   terminal fixed-width bins extending beyond the reference chromosome length.
-  Reject these by default; provide explicit, recorded terminal trimming rather
-  than silently clipping or assuming the assembly was wrong.
+  The initial hardening used strict rejection with opt-in recorded trimming.
+  This was superseded by source-grid-supported `bounds='window'` after the
+  downstream port; see D05 in [decision-register.md](decision-register.md).
+  Neither policy verifies assembly identity.
 - An agent-friendly package is an explicit API, small helpers, documented
   scientific invariants, and executable tests—not a dependence on a particular
   model, harness, or guessed API examples.
@@ -35,14 +37,20 @@ calls, intervals, pairing, annotations, or provenance are correct.
   evidence of ichorCNA accuracy. Manuscript verification must use real inputs
   outside this repository, without patient-specific code corrections.
 
-## Existing manuscript heatmap is a different measurement
+## Manuscript heatmap is a different measurement
 
-The manuscript's `R/cn_landscape.R` currently plots corrected copy number minus
-fitted ploidy, not categorical Corrected_Call. Its display path clips values at
+**Historical snapshot:** the initial review found corrected copy number minus
+fitted ploidy, not categorical Corrected_Call. A fresh audit found the live port
+now subtracts a NEUT-bin reference, with wrapper-specific fallback assumptions.
+See [the live-port audit](decision-register.md#live-manuscript-port-audit); the
+measurement change is not automatically approved by passing package checks.
+
+The earlier manuscript display path was recorded as follows. Its display path clips values at
 +/-2, blanks deviations below 0.35, and saturates the tighter palette at +/-1.
 It also orders paired rows by plasma alteration burden. These choices must not
 be silently replaced by the package's categorical call heatmap or an absolute-CN
-heatmap. The display dead band is not an ichorCNA neutrality call.
+heatmap. This remains true for the newer NEUT-reference measurement. The display
+dead band is not an ichorCNA neutrality call.
 
 `load_cn_landscape()` also catches failed pair loads and returns NULL, allowing
 pairs to disappear. The next manuscript integration pass must reconcile the

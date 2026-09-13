@@ -20,6 +20,10 @@
 #' two required), without imputation. Calls use discrete colors; continuous
 #' default scales include the observed range. CN 2 is a visual reference, not a
 #' neutrality call; sex-chromosome baseline and fitted ploidy may differ.
+#' Euclidean clustering on call codes additionally assumes ordinal spacing of
+#' -2/-1/0/1; it is exploratory, not a validated biological similarity metric.
+#' Consider a justified continuous measurement or an externally supplied row
+#' order instead. Common-bin selection can be biased by systematic filtering.
 #' @param x An `ichor_matrix`.
 #' @param annotation_columns Metadata columns to show as row annotations.
 #' @param cluster_rows Explicitly cluster samples? Default FALSE.

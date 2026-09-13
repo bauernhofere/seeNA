@@ -1,5 +1,11 @@
 # Scientific contracts (pre-release schema 1)
 
+This file defines behavior, not clinical validity. The repository's
+[decision register](../docs/decision-register.md) documents primary sources,
+alternatives, policy limitations and unresolved manuscript choices. For an
+installed copy of these methods, consult that register in the matching source
+checkout; `docs/` is repository-only.
+
 ## Supported formats and boundaries
 
 Reference: ichorCNA v0.4.0 `R/output.R`, commit
@@ -134,7 +140,11 @@ resolution; use a regional view or more pixels for bin-level inspection.
 
 Optional clustering: 2-2000 samples, at least two bins observed in every sample,
 Euclidean distance and complete linkage on these common bins, no imputation.
-Sample ordering is exploratory, not an inferential result. No global clustering
+Sample ordering is exploratory, not an inferential result. Euclidean distance on
+call codes additionally assumes ordinal spacing of -2/-1/0/1; categorical modes
+do not justify that distance. Prefer a scientifically justified continuous
+measurement or an externally supplied row order when this assumption is unwanted.
+The common-bin subset can be biased by systematic filtering. No global clustering
 by default. Annotation colors are deterministic; supply fixed palettes when
 comparing figures from different subsets.
 

@@ -21,3 +21,7 @@ Meta/
 !inst/extdata/*.cna.seg
 !inst/extdata/*.params.txt
 !inst/extdata/*.seg
+# Only these fixture-only README images may be committed; never patient renders.
+!docs/figures/README-region-1.png
+!docs/figures/README-profile-1.png
+!docs/figures/README-heatmap-1.png

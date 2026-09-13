@@ -1,5 +1,10 @@
 # ichorViz 0.0.0.9002
 
+* Added a source/evidence-linked decision register, distinguishing upstream
+  contracts, package policies and unresolved live-manuscript assumptions.
+* Added an executable illustrated README with three fixture-only figures, a
+  CI execution step, and an optional UCSC reference-length audit.
+* Documented the ordinal-distance assumption of optional call-code clustering.
 * Added default bounds='window' for source-grid-supported terminal padding;
   arbitrary overhangs still fail. Window acceptance does not verify genome build.
 * Aggregated coordinate notices at cohort level, without blanket warning suppression.

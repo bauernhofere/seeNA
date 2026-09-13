@@ -2,7 +2,13 @@
 output: github_document
 ---
 
-
+```{r setup, include=FALSE}
+# Build from this checkout; no installed older version or clinical files.
+pkgload::load_all(".", quiet = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", error = FALSE,
+  dev = "ragg_png", dpi = 144, fig.cap = "", fig.width = 9, fig.height = 3.6,
+  fig.path = "docs/figures/README-", out.width = "100%")
+```
 
 <!-- Generated from README.Rmd with make readme. Do not edit README.md directly. -->
 
@@ -34,8 +40,7 @@ results. It **does not fit ichorCNA, select a best run, infer pairs, or call CNA
 
 ## Install
 
-
-``` r
+```{r install, eval=FALSE}
 # install.packages("remotes")
 # Requires private-repository access. Pin the tested implementation:
 remotes::install_github(
@@ -54,8 +59,7 @@ BiocManager::install(c("ComplexHeatmap", "circlize"))
 Supply a build and files from the **same selected run**. Only the bin file is
 required; segment and parameter files add their respective information.
 
-
-``` r
+```{r import}
 library(ichorViz)
 root <- system.file("extdata", package = "ichorViz")
 a <- read_ichor_sample(
@@ -73,8 +77,7 @@ and X; blank genomic space is deliberately not filled with invented observations
 
 ### Compare at a locus
 
-
-``` r
+```{r region, fig.alt="Two test fixtures on chromosome 1, 0–4 Mb: four original bin midpoints per sample and their segment medians; not patient results."}
 b <- read_ichor_sample(
   file.path(root, "example-b.cna.seg"),
   file.path(root, "example-b.seg"),
@@ -91,15 +94,12 @@ plot_ichor_region(
 )
 ```
 
-<img src="docs/figures/README-region-1.png" alt="Two test fixtures on chromosome 1, 0–4 Mb: four original bin midpoints per sample and their segment medians; not patient results." width="100%" />
-
 Use `plot_ichor_compare(list(a, b))` for a genome-wide overlay. Sample relationships
 come from your study design, never filename heuristics.
 
 ### A whole-genome profile, with your styling
 
-
-``` r
+```{r profile, fig.height=3.8, fig.alt="Sparse whole-genome test profile with chromosome-length axes, call-colored bins and grey segments. Most of the genome has no fixture observations."}
 plot_ichor_profile(a, point_size = 1.8) +
   ggplot2::labs(
     title = "A profile on reference-length axes",
@@ -114,8 +114,6 @@ plot_ichor_profile(a, point_size = 1.8) +
   )
 ```
 
-<img src="docs/figures/README-profile-1.png" alt="Sparse whole-genome test profile with chromosome-length axes, call-colored bins and grey segments. Most of the genome has no fixture observations." width="100%" />
-
 Plot functions return ordinary **ggplot objects**. Add themes, labels or explicit
 view limits, or export with `ggplot2::ggsave()`. Named `colors` arguments control
 sample or state palettes; they never change the underlying calls.
@@ -125,8 +123,7 @@ sample or state palettes; they never change the underlying calls.
 Choose the measurement explicitly. Here, `value = "call"` shows **corrected call
 categories**, not absolute copy number or CN minus ploidy.
 
-
-``` r
+```{r matrix}
 cohort <- read_ichor_cohort(
   file.path(root, "example-manifest.csv"), genome_build = "hg38"
 )
@@ -137,8 +134,7 @@ For this tiny illustration, retain only the first **5 Mb of each chromosome**.
 The fifth bin has no fixture input and stays NA. Subset the coordinates and all
 three aligned matrices together; nothing is imputed or rescaled.
 
-
-``` r
+```{r crop}
 keep <- m$bins$start <= 5e6
 view <- m
 view$bins <- m$bins[keep, , drop = FALSE]
@@ -148,8 +144,7 @@ for (layer in c("values", "coverage", "mixed")) {
 validate_ichor_matrix(view)
 ```
 
-
-``` r
+```{r heatmap, fig.height=3.2, fig.alt="Two-row corrected-call heatmap of test fixtures: first five 1-Mb bins of chromosomes 1, 2 and X. The fifth bin on each chromosome is grey for absent input; condition A and B are illustrative metadata."}
 h <- plot_ichor_heatmap(
   view, annotation_columns = "condition", show_row_names = TRUE,
   annotation_colors = list(condition = c(A = "#007A87", B = "#B34E18"))
@@ -165,8 +160,6 @@ ComplexHeatmap::draw(
 )
 ```
 
-<img src="docs/figures/README-heatmap-1.png" alt="Two-row corrected-call heatmap of test fixtures: first five 1-Mb bins of chromosomes 1, 2 and X. The fifth bin on each chromosome is grey for absent input; condition A and B are illustrative metadata." width="100%" />
-
 For your full cohort, plot `m` directly. Rows retain manifest order unless you
 explicitly request another order. Inspect `m$coverage` and `m$mixed` before
 interpreting NA cells or heterogeneous target bins. Upstream filtering can leave
@@ -174,8 +167,7 @@ substantial gaps; an absent bin is **not a neutral call**.
 
 ## Raw or upstream-adjusted logR? Make it explicit
 
-
-``` r
+```{r helpers, eval=FALSE}
 plot_ichor_profile(a, ploidy_adjust = TRUE)
 plot_ichor_region(list(a, b), "chrX:1-4000000", ploidy_adjust = TRUE)
 
@@ -220,8 +212,7 @@ includes an auditable run-selection recipe that refuses ambiguous TF matches.
 
 ## Reproducibility and development
 
-
-``` r
+```{r provenance, eval=FALSE}
 ichor_provenance(cohort)
 sessionInfo()
 # Save these privately with the selected-run manifest, package commit,

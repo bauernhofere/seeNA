@@ -17,6 +17,8 @@ annotations are supported but are not automatically safe to share.
 - `R/matrix.R`: continuous means, categorical modes, coverage and mixed flags.
 - `R/plot.R`, `R/heatmap.R`: standard plot objects, no file writes.
 - `docs/data-contracts.md`: scientific semantics and compatibility limits.
+- `docs/decision-register.md`: rationale, sources, alternatives and open study gates.
+- `README.Rmd`: executable source for README.md and the three fixture-only pictures.
 - `tests/testthat/test-adversarial.R`: regressions for independent-review findings.
 
 ## Non-negotiable scientific rules
@@ -43,6 +45,9 @@ rendered patient figures. Real data stay outside the repository. Existing tiny
 format fixtures are test-only examples, not biological validation. New malformed
 or boundary-case test inputs must be clearly test-only, never manuscript data.
 No test or example may require private data, credentials, or a network connection.
+`make readme` regenerates only the three allowlisted fixture PNGs in docs/figures;
+never replace them with patient-derived images. `make audit-reference` is an
+explicit optional network audit of public UCSC chromosome tables, not a test.
 Path redaction and identifier-pattern tests do not de-identify genomic data.
 
 ## Change checklist
@@ -54,6 +59,9 @@ Path redaction and identifier-pattern tests do not de-identify genomic data.
    roxygen: do not edit them manually.
 5. Test actual rendering for plot changes; plot-object class tests are insufficient.
 6. Keep real-data checks local and report aggregates, never identifying data.
+7. Change README.Rmd, then run `make readme`; inspect the generated figures.
+   Keep source/markdown/images together. For scientific/default changes, update
+   the decision ID and methods, distinguishing policy from external evidence.
 
 `make bootstrap` installs development dependencies (network required).
 `make check` generates docs, tests, and performs R CMD check. Passing it is

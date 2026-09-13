@@ -43,9 +43,10 @@ The minimum declared R 4.1 is not independently verified by this local run.
 
 1. Explicitly freeze the manuscript's source-run and sample-pair manifest.
 2. Reconcile expected/plotted samples; do not silently drop failed pairs.
-3. Reproduce the existing CN-minus-ploidy heatmap with explicit display thresholds,
-   ordering and saturation (see review-triage.md); a categorical call plot is not
-   an equivalent substitute.
+3. Reconcile the intended heatmap measurement, display thresholds, ordering and
+   saturation. The initial snapshot used CN minus fitted ploidy; the live port
+   now uses a NEUT-bin reference with wrapper-specific assumptions (see the
+   decision register). A categorical call plot is not an equivalent substitute.
 4. Compare package-driven final figures/matrices with source results and obtain
    author approval of the measurement and presentation.
 5. Confirm study-code copyright/contributor attribution before public distribution.

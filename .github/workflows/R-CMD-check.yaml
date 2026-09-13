@@ -36,4 +36,7 @@ jobs:
         run: |
           Rscript -e 'stopifnot(as.character(packageVersion("roxygen2")) == read.dcf("DESCRIPTION")[1, "RoxygenNote"]); roxygen2::roxygenise()'
           git diff --exit-code -- man NAMESPACE
+      - name: Execute README and fixture-only gallery
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: Rscript -e 'knitr::knit("README.Rmd", output = "README.md", quiet = TRUE)'
       - uses: r-lib/actions/check-r-package@v2
