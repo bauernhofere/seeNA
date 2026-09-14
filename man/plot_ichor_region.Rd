@@ -4,20 +4,42 @@
 \alias{plot_ichor_region}
 \title{Plot a genomic region}
 \usage{
-plot_ichor_region(samples, region, colors = NULL, point_size = 0.55)
+plot_ichor_region(
+  samples,
+  region,
+  colors = NULL,
+  point_size = 0.55,
+  ploidy_adjust = FALSE,
+  show_sample_id = TRUE
+)
 }
 \arguments{
-\item{samples}{An \code{ichor_sample} or list of samples.}
+\item{samples}{An \code{ichor_sample} or list of samples with unique identifiers
+and the same genome build.}
 
-\item{region}{Optional \code{chr:start-end} region. The default is genome-wide.}
+\item{region}{Required chromosome or \code{chr:start-end} interval.}
 
 \item{colors}{Optional named vector of sample colors.}
 
 \item{point_size}{Bin point size.}
+
+\item{ploidy_adjust}{Apply \code{\link[=ichor_adjusted_logr]{ichor_adjusted_logr()}} to bins and segments?
+Default \code{FALSE} keeps raw output; \code{TRUE} requires TF and ploidy.}
+
+\item{show_sample_id}{Show sample identifiers in the legend and subtitle?
+Default \code{TRUE}. Set \code{FALSE} to hide the legend and name-bearing subtitle.}
 }
 \value{
-A \code{ggplot} object.
+A \code{ggplot} object with an \code{ichor_transform} metadata attribute.
 }
 \description{
-Plot a genomic region
+Zooms one or more samples into a chromosome or \code{chr:start-end} interval
+using the original bin midpoints; a thin wrapper around \code{\link[=plot_ichor_compare]{plot_ichor_compare()}}.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+                       file.path(root, "example-a.seg"), genome_build = "hg38")
+plot_ichor_region(a, "chr1:1-4000000")
+plot_ichor_region(a, "chrX")
 }

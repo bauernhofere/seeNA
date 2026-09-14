@@ -8,21 +8,48 @@ plot_ichor_profile(
   x,
   call_column = "corrected_call",
   colors = ichor_state_colors(),
-  point_size = 0.35
+  point_size = 0.35,
+  ploidy_adjust = FALSE,
+  show_sample_id = TRUE
 )
 }
 \arguments{
 \item{x}{An \code{ichor_sample}.}
 
-\item{call_column}{Column used to color copy-number states.}
+\item{call_column}{Bin column used to color states: \code{"corrected_call"} or
+\code{"event"}. There is no fallback between the two.}
 
-\item{colors}{Named state color vector.}
+\item{colors}{Named state color vector; see \code{\link[=ichor_state_colors]{ichor_state_colors()}}.}
 
 \item{point_size}{Bin point size.}
+
+\item{ploidy_adjust}{Apply \code{\link[=ichor_adjusted_logr]{ichor_adjusted_logr()}} to bins and segments?
+Default \code{FALSE} keeps raw output; \code{TRUE} requires TF and ploidy.}
+
+\item{show_sample_id}{Show the sample identifier in the title and subtitle?
+Default \code{TRUE}. Set \code{FALSE} to omit identifiers from the figure.}
 }
 \value{
-A \code{ggplot} object.
+A \code{ggplot} object with an \code{ichor_transform} metadata attribute.
 }
 \description{
-Plot one genome-wide ichorCNA profile
+Draws bin log ratios on a reference-length genome axis, colored by the
+selected call column, with segment medians drawn as grey lines.
+}
+\details{
+Segments are grey so raw segment events are not merged into the corrected
+bin-call legend. Missing calls are grey, not neutral. Set \code{ploidy_adjust}
+to reproduce the upstream plotting shift (see \code{\link[=ichor_adjusted_logr]{ichor_adjusted_logr()}}).
+See the installed methods contract for limits.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(
+  file.path(root, "example-a.cna.seg"),
+  file.path(root, "example-a.seg"),
+  file.path(root, "example-a.params.txt"),
+  genome_build = "hg38"
+)
+plot_ichor_profile(a)
+plot_ichor_profile(a, ploidy_adjust = TRUE, show_sample_id = FALSE)
 }

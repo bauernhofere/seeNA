@@ -16,9 +16,25 @@
   data.frame(chr = .chr_levels, length = sizes, stringsAsFactors = FALSE)
 }
 
-.genome_layout <- function(build, chromosomes = NULL) {
-  d <- .chromosome_sizes(build)
-  if (!is.null(chromosomes) && !"Y" %in% chromosomes) d <- d[d$chr != "Y", , drop = FALSE]
+#' Reference chromosome lengths and cumulative offsets
+#'
+#' Returns the reference lengths of the selected chromosomes and the
+#' cumulative offsets, midpoints and boundaries used for genome-wide axes.
+#' @param genome_build Explicit `"hg19"` or `"hg38"`.
+#' @param chromosomes Chromosomes to include; default autosomes and X.
+#'   Selected chromosomes are always ordered genomically. Include Y explicitly.
+#' @return Data frame with `chr`, `length`, `offset`, `mid` and `boundary` in
+#'   base pairs. Offsets depend on the chromosome set, so reuse the same
+#'   layout across samples.
+#' @examples
+#' head(ichor_genome_layout("hg38"))
+#' ichor_genome_layout("hg19", c("1", "X", "Y"))
+#' @export
+ichor_genome_layout <- function(genome_build, chromosomes = c(as.character(1:22), "X")) {
+  d <- .chromosome_sizes(genome_build)
+  chromosomes <- unique(.normalize_chr(chromosomes))
+  if (!length(chromosomes) || anyNA(chromosomes) || !all(chromosomes %in% d$chr)) .ichor_abort("Unsupported chromosomes.")
+  d <- d[d$chr %in% chromosomes, , drop = FALSE]
   d$offset <- c(0, utils::head(cumsum(d$length), -1))
   d$mid <- d$offset + d$length / 2
   d$boundary <- d$offset + d$length
@@ -39,12 +55,16 @@
 
 #' Parse a genomic region
 #'
-#' Accepts a whole chromosome such as `"chr8"`, or an interval such as
-#' `"chr8:117000000-138000000"`. Commas in coordinates are allowed.
+#' Turns a whole chromosome such as `"chr8"`, or an interval such as
+#' `"chr8:117000000-138000000"`, into a checked one-row data frame. Commas in
+#' coordinates are allowed.
 #'
 #' @param region Region string.
 #' @param genome_build Genome build used for bounds checking.
 #' @return A one-row data frame with `chr`, `start`, and `end`.
+#' @examples
+#' parse_ichor_region("chr8:117,000,000-138,000,000", "hg38")
+#' parse_ichor_region("X", "hg19")
 #' @export
 parse_ichor_region <- function(region, genome_build) {
   genome_build <- match.arg(genome_build, c("hg19", "hg38"))
@@ -52,6 +72,9 @@ parse_ichor_region <- function(region, genome_build) {
     .ichor_abort("region must be a non-empty scalar.", "ichorviz_region_error")
   }
   clean <- gsub("[,]", "", trimws(region))
+  if (!grepl("^(chr)?([0-9]+|X|Y)(:[0-9]+-[0-9]+)?$", clean, ignore.case = TRUE)) {
+    .ichor_abort("Use chromosome or chr:start-end with integer coordinates.", "ichorviz_region_error")
+  }
   pieces <- strsplit(clean, ":", fixed = TRUE)[[1]]
   chr <- .normalize_chr(pieces[1])
   sizes <- .chromosome_sizes(genome_build)

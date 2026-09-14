@@ -7,16 +7,26 @@
 read_ichor_cna(path, sample_id = NULL)
 }
 \arguments{
-\item{path}{Path to an ichorCNA \code{.cna.seg} file.}
+\item{path}{Path to a \code{.cna.seg} file.}
 
-\item{sample_id}{Optional sample identifier. By default it is inferred from
-prefixed columns or the filename.}
+\item{sample_id}{Optional output alias, not a selector for multi-sample files.}
 }
 \value{
-A data frame with normalized bin-level columns and a \code{sample_id}
-attribute.
+Normalized data frame with \code{sample_id} and \code{source_id} attributes.
 }
 \description{
-Reads a \code{.cna.seg} file and normalizes both ordinary and sample-prefixed
-column names to a stable schema.
+Reads one sample's \code{.cna.seg} file and returns a normalized data frame with
+\code{chr}, \code{start}, \code{end}, \code{logR} and any optional call and copy-number columns.
+}
+\details{
+Sample-prefixed column names such as \code{sample.logR} are stripped; files with
+several sample prefixes are rejected. Missing values stay \code{NA}; malformed
+values and ambiguous columns raise a classed schema error. Coordinates are
+1-based closed intervals.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+bins <- read_ichor_cna(file.path(root, "example-a.cna.seg"))
+head(bins)
+attr(bins, "sample_id")
 }

@@ -7,27 +7,58 @@
 plot_ichor_heatmap(
   x,
   annotation_columns = NULL,
-  cluster_rows = TRUE,
-  show_row_names = nrow(x$values) <= 100,
-  colors = NULL
+  cluster_rows = FALSE,
+  show_row_names = TRUE,
+  colors = NULL,
+  annotation_colors = NULL,
+  row_order = NULL,
+  na_col = "#D9D9D9"
 )
 }
 \arguments{
 \item{x}{An \code{ichor_matrix}.}
 
-\item{annotation_columns}{Optional columns from the cohort metadata to show
-as row annotations.}
+\item{annotation_columns}{Metadata columns to show as row annotations.}
 
-\item{cluster_rows}{Whether to cluster samples.}
+\item{cluster_rows}{Explicitly cluster samples? Default \code{FALSE}.}
 
-\item{show_row_names}{Whether to display sample identifiers.}
+\item{show_row_names}{Display sample identifiers? Default \code{TRUE}; set
+\code{FALSE} to omit them from the figure.}
 
-\item{colors}{Optional color function. Defaults depend on the matrix value.}
+\item{colors}{Custom continuous color function or named discrete call colors.}
+
+\item{annotation_colors}{Named list of annotation palettes/color functions.}
+
+\item{row_order}{Optional permutation of sample aliases. Mutually exclusive
+with clustering.}
+
+\item{na_col}{Color for missing, insufficiently covered or tied values.}
 }
 \value{
-A \code{ComplexHeatmap::Heatmap} object.
+An undrawn \code{ComplexHeatmap::Heatmap} object. Use
+\code{ComplexHeatmap::draw()} to render it on the caller's device.
 }
 \description{
-Uses ComplexHeatmap when installed. Samples are rows and ordered genomic bins
-are columns split by chromosome.
+Builds an annotated \code{ComplexHeatmap::Heatmap} from an \code{\link[=ichor_matrix]{ichor_matrix()}}, one
+row per sample and one column per genomic bin, split by chromosome.
+}
+\details{
+Rows keep manifest order unless you cluster or pass \code{row_order}. Optional
+clustering uses Euclidean distance and complete linkage on bins observed in
+every sample, with no imputation; on call codes it assumes ordinal spacing
+and is exploratory only. Missing, tied and under-covered cells use \code{na_col};
+inspect the matrix \code{coverage} and \code{mixed} layers to tell them apart. CN 2 is
+a reference color, not a neutrality call. See the installed methods
+contract for limits.
+}
+\examples{
+if (requireNamespace("ComplexHeatmap", quietly = TRUE) &&
+    requireNamespace("circlize", quietly = TRUE)) {
+  root <- system.file("extdata", package = "ichorViz")
+  cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+  m <- ichor_matrix(cohort, value = "call", chromosomes = c("1", "2"))
+  h <- plot_ichor_heatmap(m, annotation_columns = "condition")
+  class(h)
+  # ComplexHeatmap::draw(h) renders it on the current device.
+}
 }

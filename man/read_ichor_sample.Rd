@@ -2,30 +2,61 @@
 % Please edit documentation in R/sample.R
 \name{read_ichor_sample}
 \alias{read_ichor_sample}
-\title{Construct a validated ichorCNA sample}
+\title{Read one ichorCNA sample}
 \usage{
 read_ichor_sample(
   cna_seg,
   seg = NULL,
   params = NULL,
   genome_build,
-  sample_id = NULL
+  sample_id = NULL,
+  retain_paths = FALSE,
+  bounds = c("window", "error", "trim")
 )
 }
 \arguments{
 \item{cna_seg}{Path to a \code{.cna.seg} file.}
 
-\item{seg}{Optional path to a \code{.seg} file.}
+\item{seg}{Optional segment file.}
 
-\item{params}{Optional path to a \code{.params.txt} file.}
+\item{params}{Optional parameter file.}
 
-\item{genome_build}{Genome build, currently \code{"hg19"} or \code{"hg38"}.}
+\item{genome_build}{Explicit \code{"hg19"} or \code{"hg38"}.}
 
-\item{sample_id}{Optional sample identifier.}
+\item{sample_id}{Optional output alias; source identities are still checked.}
+
+\item{retain_paths}{Retain absolute source paths in provenance? Default \code{FALSE}.}
+
+\item{bounds}{Out-of-build interval policy. Default \code{"window"} clips only
+terminal padding supported by a regular source bin grid. \code{"error"}
+rejects every out-of-build interval. \code{"trim"} clips any straddling
+interval with a warning. Every change is recorded.}
 }
 \value{
-An object of class \code{ichor_sample}.
+A validated \code{ichor_sample} (schema version 1) with elements
+\code{sample_id}, \code{genome_build}, \code{bins}, \code{segments}, \code{params},
+\code{coordinate_changes} and \code{provenance}.
 }
 \description{
-Construct a validated ichorCNA sample
+Reads a bin file plus optional segment and parameter files from one
+selected ichorCNA run into a validated \code{ichor_sample} object.
+}
+\details{
+Source sample IDs must agree across all supplied files before an alias is
+applied. Intervals are validated against the stated genome build; regular
+terminal window padding is clipped and recorded in \code{coordinate_changes}.
+Import-time fingerprints are stored for reproducibility. See the installed
+methods contract for the full coordinate and identity rules.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(
+  file.path(root, "example-a.cna.seg"),
+  file.path(root, "example-a.seg"),
+  file.path(root, "example-a.params.txt"),
+  genome_build = "hg38"
+)
+a
+head(a$bins)
+a$params
 }

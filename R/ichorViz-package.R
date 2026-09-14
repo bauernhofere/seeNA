@@ -4,10 +4,25 @@
 #' objects, genome-wide and regional plots, paired or multi-sample comparisons,
 #' and cohort-scale matrices and heatmaps.
 #'
+#' @section Scientific methods:
+#' The installed `methods.md` documents coordinate conventions, supported
+#' schemas, categorical aggregation, coverage, privacy and limitations:
+#' `file.show(system.file("methods.md", package = "ichorViz"))`.
+#'
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' s <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+#'                        genome_build = "hg38")
+#' plot_ichor_profile(s)
+#' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+#' calls <- ichor_matrix(cohort, value = "call", chromosomes = "1")
+#' calls$values[, 1:4]
+#'
 #' @keywords internal
 "_PACKAGE"
 
 utils::globalVariables(c(
   "chr", "start", "end", "mid", "x", "xend", "logR", "median",
-  "state", "sample", "value", "bin_index", "overlap", "weighted"
+  "state", "sample", "value", "bin_index", "overlap", "weighted",
+  "xleft", "xright", "ymin", "ymax", "category", "panel"
 ))

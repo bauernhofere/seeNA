@@ -7,13 +7,22 @@
 read_ichor_params(path)
 }
 \arguments{
-\item{path}{Path to an ichorCNA \code{.params.txt} file.}
+\item{path}{Path to a \code{.params.txt} file.}
 }
 \value{
-A one-row data frame containing \code{sample_id}, \code{tumor_fraction},
-\code{ploidy}, and \code{gender} when available.
+One-row data frame: \code{sample_id}, \code{tumor_fraction}, \code{ploidy}, \code{gender}.
 }
 \description{
-Supports the tabular header and key-value sections found in ichorCNA
-\code{.params.txt} files.
+Reads the fitted tumor fraction, ploidy and gender of one selected sample
+from a \code{.params.txt} file, accepting the tabular header and/or the
+key-value section.
+}
+\details{
+Repeated fields must agree numerically. The appended candidate-solution
+table is ignored as diagnostics. Empty files and files describing several
+samples raise a schema error.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+read_ichor_params(file.path(root, "example-a.params.txt"))
 }

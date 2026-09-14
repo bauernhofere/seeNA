@@ -1,21 +1,10 @@
 cff-version: 1.2.0
 title: "ichorViz: Explore and compare ichorCNA copy-number profiles"
 type: software
-message: "Please cite ichorViz and the original ichorCNA publication."
+message: "Cite the package version/commit used, and cite ichorCNA separately (doi:10.1038/s41467-017-00965-y). This is a pre-release development version, not an archived software release."
 authors:
   - family-names: Bauernhofer
     given-names: Emil
 repository-code: "https://github.com/bauernhofere/ichorViz"
 license: GPL-3.0-or-later
-version: 0.0.0.9000
-preferred-citation:
-  type: article
-  title: "Scalable whole-exome sequencing of cell-free DNA reveals high concordance with metastatic tumors"
-  authors:
-    - family-names: Adalsteinsson
-      given-names: Viktor A.
-    - family-names: Ha
-      given-names: Gavin
-  journal: Nature Communications
-  year: 2017
-  doi: 10.1038/s41467-017-00965-y
+version: 0.0.0.9002

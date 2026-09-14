@@ -2,16 +2,27 @@
 % Please edit documentation in R/provenance.R
 \name{ichor_provenance}
 \alias{ichor_provenance}
-\title{Summarize input provenance}
+\title{Retrieve immutable import provenance}
 \usage{
 ichor_provenance(x)
 }
 \arguments{
-\item{x}{An \code{ichor_sample} or \code{ichor_cohort}.}
+\item{x}{An \code{ichor_sample}, \code{ichor_cohort}, or \code{ichor_matrix}.}
 }
 \value{
-A data frame of source files, sizes, and MD5 checksums.
+A data frame of import-time fingerprints and metadata.
 }
 \description{
-Summarize input provenance
+Returns the file fingerprints (MD5 and byte counts) and package, build and
+schema metadata captured when the inputs were read.
+}
+\details{
+Fingerprints are not recomputed from the current files. Paths are absent
+unless \code{retain_paths = TRUE} was used at import. MD5 is a reproducibility
+checksum, not a security or de-identification measure.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
+ichor_provenance(a)
 }

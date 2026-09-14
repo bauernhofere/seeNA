@@ -1,0 +1,138 @@
+---
+title: "Explicit ichorCNA inputs, plotting transforms, and run selection"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Explicit ichorCNA inputs, plotting transforms, and run selection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8, fig.height = 3)
+library(ichorViz)
+```
+
+This example uses the package's small test-only format fixtures. For manuscript
+results, supply your real files and record the exact selected run.
+
+## Read without swallowing warnings
+
+```{r import}
+root <- system.file("extdata", package = "ichorViz")
+x <- read_ichor_sample(
+  file.path(root, "example-a.cna.seg"),
+  file.path(root, "example-a.seg"),
+  file.path(root, "example-a.params.txt"),
+  genome_build = "hg38"
+)
+ c(TF = ichor_tf(x), tumor_ploidy = ichor_ploidy(x))
+```
+
+The default `bounds = "window"` clips fixed-width terminal bins that overhang
+the reference length, provided the rest of the file sits on a regular bin grid.
+Each clipped interval is recorded in `x$coordinate_changes`, and a cohort emits
+one summary message rather than one per sample. `bounds = "error"` rejects any
+overhang; `bounds = "trim"` clips any straddling interval with a warning.
+Rather than wrapping imports in `suppressWarnings()`, handle the classed
+conditions `ichorviz_window_padding` (message) and `ichorviz_bounds_warning`
+(warning). Window acceptance does not verify the genome build: verify the
+assembly from the original run configuration.
+
+## Reuse public helpers rather than duplicate conventions
+
+```{r helpers}
+head(ichor_genome_layout("hg38"))
+ichor_call_state(c("HOMD", "HETD", "NEUT", "GAIN", "AMP", "HLAMP3", NA))
+ichor_state_colors()
+ichor_neutral_cn(x)
+```
+
+`ichor_neutral_cn()` summarizes observed copy numbers in NEUT bins separately for
+autosomes, X and Y, pairing `corrected_call` with `corrected_copy_number` or
+`event` with `copy_number`. A value is reported only when exactly one distinct
+copy number was observed; otherwise the result is NA with a status and the
+candidate values. There is no diploid default or borrowing between chromosome
+classes.
+
+## Raw versus upstream-adjusted log ratio
+
+```{r shifted-profile}
+plot_ichor_profile(x, ploidy_adjust = TRUE)
+```
+
+The opt-in shift matches the **formula** in ichorCNA v0.4
+`plotGWSolution() -> plotCNlogRByChr()`:
+
+\[
+P_{mixture}=fP_{tumor}+(1-f)2,\qquad
+ y=\mathrm{logR}+\log_2(P_{mixture}/2).
+\]
+
+`f` is fitted TF as a fraction. The same shift is applied to segment medians, and
+`ichor_adjusted_logr(x)` / `ichor_adjusted_logr(x, "segments")` expose the vectors
+for custom graphics. Exported parameters are rounded, so the result need not be
+pixel-identical to upstream's in-memory plot. The source object is not modified;
+plots attach `ichor_transform` metadata. Raw output is the default, and requesting
+the adjustment without parameters is an error.
+
+This is a display transform, not integer CN, purity deconvolution, or a new call,
+and it does not guarantee that every loss lies below zero or every gain above.
+
+## Cohort missingness is visible, not imputed
+
+```{r cohort}
+cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+m <- ichor_matrix(cohort, value = "call", chromosomes = "1")
+m$values[, 1:4]
+m$coverage[, 1:4]
+```
+
+ichorCNA filters bins, so a complete reference grid can contain many NA cells
+even for valid data. With `min_coverage = 1`, only fully observed target bins
+receive a value; inspect `coverage` and `mixed` before lowering the threshold.
+Categorical mixtures use the base-pair mode with NA ties, never averages that
+could cancel gain and loss to zero.
+
+## Selection support without silently choosing a fitted solution
+
+Multiple fitted runs for the same sample can disagree, and the selected
+`.cna.seg`, `.seg` and `.params.txt` must come from one run. The following recipe
+(not executed here) compares candidate runs against an externally reported TF.
+`candidates` is a user-maintained table with one row per run and complete paths;
+`reported_tf` and `tolerance` are fractions, with the tolerance reflecting the
+documented reporting precision.
+
+```{r select-run, eval=FALSE}
+stopifnot(all(c("run", "cna_seg", "seg", "params") %in% names(candidates)))
+stopifnot(!anyDuplicated(candidates$run))
+stopifnot(all(file.exists(unlist(candidates[c("cna_seg", "seg", "params")]))))
+stopifnot(length(reported_tf) == 1, is.finite(reported_tf),
+          reported_tf >= 0, reported_tf <= 1,
+          length(tolerance) == 1, is.finite(tolerance), tolerance >= 0)
+p <- lapply(candidates$params, read_ichor_params)
+source_ids <- vapply(p, function(z) z$sample_id, character(1))
+stopifnot(length(unique(source_ids)) == 1)
+candidates$fitted_tf <- vapply(p, function(z) z$tumor_fraction, numeric(1))
+candidates$delta <- abs(candidates$fitted_tf - reported_tf)
+candidates$eligible <- is.finite(candidates$delta) & candidates$delta <= tolerance
+candidates  # inspect and save this audit table privately
+if (sum(candidates$eligible) != 1L) {
+  stop("No unique matching run: resolve absent/ambiguous evidence explicitly.")
+}
+selected <- candidates[candidates$eligible, ]
+x <- read_ichor_sample(selected$cna_seg, selected$seg, selected$params,
+                       genome_build = build)
+# Save selected run ID, evidence table, tolerance, input fingerprints and commit.
+ichor_provenance(x)
+```
+
+If several runs match, record the external adjudication rather than silently
+choosing one. The package does not fit, rank by biological result, or infer the
+correct run.
+
+## Before citing manuscript results
+
+Freeze the package commit and input-run manifest, inspect the exported figures,
+and record transformation settings, thresholds, cohort exclusions and plot
+scales, including which measurement each heatmap shows. Release and DOI issuance
+still need author approval.

@@ -15,6 +15,11 @@ parse_ichor_region(region, genome_build)
 A one-row data frame with \code{chr}, \code{start}, and \code{end}.
 }
 \description{
-Accepts a whole chromosome such as \code{"chr8"}, or an interval such as
-\code{"chr8:117000000-138000000"}. Commas in coordinates are allowed.
+Turns a whole chromosome such as \code{"chr8"}, or an interval such as
+\code{"chr8:117000000-138000000"}, into a checked one-row data frame. Commas in
+coordinates are allowed.
+}
+\examples{
+parse_ichor_region("chr8:117,000,000-138,000,000", "hg38")
+parse_ichor_region("X", "hg19")
 }

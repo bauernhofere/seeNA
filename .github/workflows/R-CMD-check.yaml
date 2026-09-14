@@ -6,14 +6,18 @@ on:
 
 jobs:
   R-CMD-check:
+    name: R-CMD-check (${{ matrix.config.os }}, ${{ matrix.config.r }}, ${{ matrix.config.ggplot || 'latest ggplot2' }})
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
         config:
           - {os: macos-latest, r: release}
+          - {os: windows-latest, r: release}
+          - {os: ubuntu-latest, r: oldrel-1}
           - {os: ubuntu-latest, r: release}
           - {os: ubuntu-latest, r: devel}
+          - {os: ubuntu-latest, r: release, ggplot: 'ggplot2@3.5.2'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -25,6 +29,17 @@ jobs:
           use-public-rspm: true
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            roxygen2@7.3.3
+            ${{ matrix.config.ggplot || 'any::ggplot2' }}
           needs: check
+      - name: Verify generated documentation
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: |
+          Rscript -e 'stopifnot(as.character(packageVersion("roxygen2")) == read.dcf("DESCRIPTION")[1, "RoxygenNote"]); roxygen2::roxygenise()'
+          git diff --exit-code -- man NAMESPACE
+      - name: Execute README and fixture-only gallery
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: Rscript -e 'knitr::knit("README.Rmd", output = "README.md", quiet = TRUE)'
       - uses: r-lib/actions/check-r-package@v2

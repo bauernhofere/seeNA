@@ -5,3 +5,4 @@
 ^Makefile$
 ^NOTICE\.md$
 ^README\.Rmd$
+^docs$
