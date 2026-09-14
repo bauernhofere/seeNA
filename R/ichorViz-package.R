@@ -23,5 +23,6 @@
 
 utils::globalVariables(c(
   "chr", "start", "end", "mid", "x", "xend", "logR", "median",
-  "state", "sample", "value", "bin_index", "overlap", "weighted"
+  "state", "sample", "value", "bin_index", "overlap", "weighted",
+  "xleft", "xright", "ymin", "ymax", "category", "panel"
 ))

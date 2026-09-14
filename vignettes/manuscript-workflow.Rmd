@@ -12,9 +12,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8, fig.height
 library(ichorViz)
 ```
 
-This example uses the package's small **test-only format fixtures**, not patient
-data or a biological simulation. For manuscript results, supply your real files
-from an access-controlled location and record the exact selected run.
+This example uses the package's small test-only format fixtures. For manuscript
+results, supply your real files and record the exact selected run.
 
 ## Read without swallowing warnings
 
@@ -29,23 +28,15 @@ x <- read_ichor_sample(
  c(TF = ichor_tf(x), tumor_ploidy = ichor_ploidy(x))
 ```
 
-The default `bounds = "window"` supports terminal fixed-width windows, including
-when upstream filtering has removed intermediate bins. At least two observed
-interior bins must support one width; all remaining bin starts/ends must fit the
-same 1-based grid, and any segment overhang must end at an observed terminal bin
-boundary. Each clipped interval is recorded in `x$coordinate_changes` and import
-provenance names the policy. A cohort emits one summary, not one per sample.
-
-`bounds = "error"` remains available for strict interval-bound rejection.
-`bounds = "trim"` is a broader opt-in for manually inspected straddling intervals.
-Do **not** put `suppressWarnings()` around import. Specific conditions are
-`ichorviz_window_padding` (message) and `ichorviz_bounds_warning` (warning).
-Other warnings are not swallowed by cohort aggregation.
-
-Window acceptance does not establish the build: hg19 and hg38 can have the same
-rounded terminal window on some chromosomes. Verify the assembly from the
-original run configuration. Large overhangs are suspicious, but small ones are
-not proof of correctness.
+The default `bounds = "window"` clips fixed-width terminal bins that overhang
+the reference length, provided the rest of the file sits on a regular bin grid.
+Each clipped interval is recorded in `x$coordinate_changes`, and a cohort emits
+one summary message rather than one per sample. `bounds = "error"` rejects any
+overhang; `bounds = "trim"` clips any straddling interval with a warning.
+Rather than wrapping imports in `suppressWarnings()`, handle the classed
+conditions `ichorviz_window_padding` (message) and `ichorviz_bounds_warning`
+(warning). Window acceptance does not verify the genome build: verify the
+assembly from the original run configuration.
 
 ## Reuse public helpers rather than duplicate conventions
 
@@ -57,12 +48,11 @@ ichor_neutral_cn(x)
 ```
 
 `ichor_neutral_cn()` summarizes observed copy numbers in NEUT bins separately for
-autosomes, X and Y. It pairs `corrected_call` with `corrected_copy_number`, or
-`event` with `copy_number`. The numeric result is present only with one distinct
-observed value. Missing and ambiguous evidence return NA, with counts/status and
-candidate values. There is no modal tie break, assumed diploid fallback, or
-borrowing between chromosome classes. A supported observed value is still not
-proof of an unobserved biological baseline or the run's full calling thresholds.
+autosomes, X and Y, pairing `corrected_call` with `corrected_copy_number` or
+`event` with `copy_number`. A value is reported only when exactly one distinct
+copy number was observed; otherwise the result is NA with a status and the
+candidate values. There is no diploid default or borrowing between chromosome
+classes.
 
 ## Raw versus upstream-adjusted log ratio
 
@@ -78,20 +68,15 @@ P_{mixture}=fP_{tumor}+(1-f)2,\qquad
  y=\mathrm{logR}+\log_2(P_{mixture}/2).
 \]
 
-`f` is fitted TF as a fraction. The same shift is applied to segment medians.
-`ichor_adjusted_logr(x)` and `ichor_adjusted_logr(x, "segments")` expose the
-vectors for custom graphics. Exported parameters are rounded, so this need not
-be pixel-identical to upstream's plot made with full-precision in-memory fits.
-The source object is not modified; plotting functions attach `ichor_transform`
-metadata. Default `ploidy_adjust = FALSE` deliberately preserves raw output and
-supports samples without parameter files. No silent fallback when TRUE lacks
-parameters.
+`f` is fitted TF as a fraction. The same shift is applied to segment medians, and
+`ichor_adjusted_logr(x)` / `ichor_adjusted_logr(x, "segments")` expose the vectors
+for custom graphics. Exported parameters are rounded, so the result need not be
+pixel-identical to upstream's in-memory plot. The source object is not modified;
+plots attach `ichor_transform` metadata. Raw output is the default, and requesting
+the adjustment without parameters is an error.
 
-This is a display transform, **not** integer CN, purity deconvolution, or a new
-call. It does not guarantee every loss will fall below zero or every gain above
-zero. Sex-chromosome correction and segment-versus-bin noise can further separate
-call labels from y position. Raw segment events and corrected bin states remain
-different fields; default grey segments avoid merging their legends.
+This is a display transform, not integer CN, purity deconvolution, or a new call,
+and it does not guarantee that every loss lies below zero or every gain above.
 
 ## Cohort missingness is visible, not imputed
 
@@ -102,24 +87,20 @@ m$values[, 1:4]
 m$coverage[, 1:4]
 ```
 
-ichorCNA filters bins. A complete reference grid can therefore contain many NA
-cells even in valid data; the fraction is dataset- and measurement-specific,
-not a fixed package failure rate. With `min_coverage = 1`, only fully observed
-target bins receive a value. Inspect `coverage` and `mixed`; lower the coverage
-threshold only as an explicit analysis choice. Categorical mixtures use
-base-pair mode and NA ties, never averages that can cancel gain and loss to zero.
+ichorCNA filters bins, so a complete reference grid can contain many NA cells
+even for valid data. With `min_coverage = 1`, only fully observed target bins
+receive a value; inspect `coverage` and `mixed` before lowering the threshold.
+Categorical mixtures use the base-pair mode with NA ties, never averages that
+could cancel gain and loss to zero.
 
 ## Selection support without silently choosing a fitted solution
 
-Multiple fitted runs with the same sample ID can disagree. IDs alone do not
-verify run identity; the selected `.cna.seg`, `.seg`, and `.params.txt` paths must
-refer to the same run. A published or externally adjudicated TF is useful
-selection evidence, not grounds to optimize a manuscript result.
-
-The following **recipe is not executed**: `candidates` is a user-maintained table
-of complete paths with one row per explicitly identified run, all for one sample.
-`reported_tf` and `tolerance` are externally specified fractions. Tolerance must
-reflect documented reporting precision, not be widened until something matches.
+Multiple fitted runs for the same sample can disagree, and the selected
+`.cna.seg`, `.seg` and `.params.txt` must come from one run. The following recipe
+(not executed here) compares candidate runs against an externally reported TF.
+`candidates` is a user-maintained table with one row per run and complete paths;
+`reported_tf` and `tolerance` are fractions, with the tolerance reflecting the
+documented reporting precision.
 
 ```{r select-run, eval=FALSE}
 stopifnot(all(c("run", "cna_seg", "seg", "params") %in% names(candidates)))
@@ -145,19 +126,13 @@ x <- read_ichor_sample(selected$cna_seg, selected$seg, selected$params,
 ichor_provenance(x)
 ```
 
-If several runs match the reported TF, selecting the first by directory order is
-an additional policy—not proof they are equivalent. Record any external
-adjudication rather than silently choosing one. Full files are validated when
-the selected sample is read. The package does not fit, rank by biological result,
-or infer the correct run.
+If several runs match, record the external adjudication rather than silently
+choosing one. The package does not fit, rank by biological result, or infer the
+correct run.
 
 ## Before citing manuscript results
 
-Freeze the package commit and input-run manifest, inspect actual exported
-figures, and record transformation settings, thresholds, cohort exclusions and
-plot scales. Record whether a heatmap shows raw/adjusted logR, CN, categorical
-calls, or a separately derived quantity; CN minus fitted ploidy is not the same
-as CN minus an observed NEUT reference. No display dead band establishes a new
-neutrality call. Release/archive and DOI issuance still need author approval;
-a development version or private repository must not be described as an archived
-public software release.
+Freeze the package commit and input-run manifest, inspect the exported figures,
+and record transformation settings, thresholds, cohort exclusions and plot
+scales, including which measurement each heatmap shows. Release and DOI issuance
+still need author approval.

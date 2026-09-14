@@ -19,26 +19,42 @@ ichor_matrix(
 
 \item{bin_size}{Positive integer base-pair width.}
 
-\item{value}{Explicit measurement: \code{logR}, \code{corrected_copy_number},
-\code{copy_number}, or \code{call}.}
+\item{value}{Explicit measurement: \code{"logR"}, \code{"corrected_copy_number"},
+\code{"copy_number"}, or \code{"call"}.}
 
-\item{call_column}{For call matrices, \code{corrected_call} or \code{event}; no fallback.}
+\item{call_column}{For call matrices, \code{"corrected_call"} or \code{"event"}.}
 
 \item{min_coverage}{Minimum observed fraction (default 1). Values with less
-support are NA; zero coverage always produces NA.}
+support are \code{NA}; zero coverage always produces \code{NA}.}
 
 \item{chromosomes}{Chromosomes to include, normalized and genomically sorted.}
 
-\item{max_cells}{Allocation guard; maximum number of sample-by-bin cells.
-Values, coverage and mixed layers require at least 20 bytes per cell.}
+\item{max_cells}{Allocation guard; maximum number of sample-by-bin cells.}
 }
 \value{
-A validated \code{ichor_matrix}, with values, coverage, mixed flags,
-genomic bins, metadata, transformation settings and import provenance.
+A validated \code{ichor_matrix} with \code{values}, \code{coverage}, \code{mixed},
+\code{bins}, \code{samples}, transformation settings and import provenance.
 }
 \description{
-Continuous values use observed-base-pair-weighted means. Calls use the
-greatest base-pair support among categories; ties return NA and heterogeneous
-bins are marked in \code{mixed}. Missing/unknown observations never imply neutral.
-Coverage is non-missing source overlap divided by actual target-bin width.
+Rebins every sample in a cohort onto a fixed-width genome grid and returns
+a sample-by-bin matrix of one chosen measurement together with matching
+\code{coverage} and \code{mixed} layers.
+}
+\details{
+Continuous values use base-pair-weighted means of the overlapping source
+bins. Calls use the category with the greatest base-pair support; ties give
+\code{NA} and heterogeneous bins are flagged in \code{mixed}. Coverage is observed
+overlap divided by target-bin width; cells below \code{min_coverage} or with no
+observations are \code{NA}. Missing observations are never treated as neutral.
+See the installed methods contract for the formulas.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+m <- ichor_matrix(cohort, value = "call", chromosomes = "1")
+m
+m$values[, 1:4]
+m$coverage[, 1:4]
+logr <- ichor_matrix(cohort, value = "logR", bin_size = 5e5, chromosomes = "1")
+logr$values[, 1:4]
 }

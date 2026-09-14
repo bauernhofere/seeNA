@@ -13,6 +13,16 @@ read_ichor_params(path)
 One-row data frame: \code{sample_id}, \code{tumor_fraction}, \code{ploidy}, \code{gender}.
 }
 \description{
-Accepts single-sample tabular and/or key-value sections. Repeated scientific
-fields must agree numerically. Empty files and multiple samples are errors.
+Reads the fitted tumor fraction, ploidy and gender of one selected sample
+from a \code{.params.txt} file, accepting the tabular header and/or the
+key-value section.
+}
+\details{
+Repeated fields must agree numerically. The appended candidate-solution
+table is ignored as diagnostics. Empty files and files describing several
+samples raise a schema error.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+read_ichor_params(file.path(root, "example-a.params.txt"))
 }

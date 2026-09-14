@@ -15,19 +15,22 @@
 
 #' Plot a cohort copy-number heatmap
 #'
-#' Default row order is manifest order. Optional clustering uses Euclidean
-#' distances and complete linkage on columns observed in every sample (at least
-#' two required), without imputation. Calls use discrete colors; continuous
-#' default scales include the observed range. CN 2 is a visual reference, not a
-#' neutrality call; sex-chromosome baseline and fitted ploidy may differ.
-#' Euclidean clustering on call codes additionally assumes ordinal spacing of
-#' -2/-1/0/1; it is exploratory, not a validated biological similarity metric.
-#' Consider a justified continuous measurement or an externally supplied row
-#' order instead. Common-bin selection can be biased by systematic filtering.
+#' Builds an annotated `ComplexHeatmap::Heatmap` from an [ichor_matrix()], one
+#' row per sample and one column per genomic bin, split by chromosome.
+#'
+#' @details
+#' Rows keep manifest order unless you cluster or pass `row_order`. Optional
+#' clustering uses Euclidean distance and complete linkage on bins observed in
+#' every sample, with no imputation; on call codes it assumes ordinal spacing
+#' and is exploratory only. Missing, tied and under-covered cells use `na_col`;
+#' inspect the matrix `coverage` and `mixed` layers to tell them apart. CN 2 is
+#' a reference color, not a neutrality call. See the installed methods
+#' contract for limits.
 #' @param x An `ichor_matrix`.
 #' @param annotation_columns Metadata columns to show as row annotations.
-#' @param cluster_rows Explicitly cluster samples? Default FALSE.
-#' @param show_row_names Display sample aliases? Default FALSE.
+#' @param cluster_rows Explicitly cluster samples? Default `FALSE`.
+#' @param show_row_names Display sample identifiers? Default `TRUE`; set
+#'   `FALSE` to omit them from the figure.
 #' @param colors Custom continuous color function or named discrete call colors.
 #' @param annotation_colors Named list of annotation palettes/color functions.
 #' @param row_order Optional permutation of sample aliases. Mutually exclusive
@@ -35,9 +38,19 @@
 #' @param na_col Color for missing, insufficiently covered or tied values.
 #' @return An undrawn `ComplexHeatmap::Heatmap` object. Use
 #'   `ComplexHeatmap::draw()` to render it on the caller's device.
+#' @examples
+#' if (requireNamespace("ComplexHeatmap", quietly = TRUE) &&
+#'     requireNamespace("circlize", quietly = TRUE)) {
+#'   root <- system.file("extdata", package = "ichorViz")
+#'   cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+#'   m <- ichor_matrix(cohort, value = "call", chromosomes = c("1", "2"))
+#'   h <- plot_ichor_heatmap(m, annotation_columns = "condition")
+#'   class(h)
+#'   # ComplexHeatmap::draw(h) renders it on the current device.
+#' }
 #' @export
 plot_ichor_heatmap <- function(x, annotation_columns = NULL, cluster_rows = FALSE,
-                               show_row_names = FALSE, colors = NULL,
+                               show_row_names = TRUE, colors = NULL,
                                annotation_colors = NULL, row_order = NULL, na_col = "#D9D9D9") {
   validate_ichor_matrix(x)
   .flag(cluster_rows, "cluster_rows")

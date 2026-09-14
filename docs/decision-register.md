@@ -1,6 +1,7 @@
 # Decision register: rationale, evidence and limits
 
-**Scope:** ichorViz development implementation `1dd2d5d` (0.0.0.9002).
+**Scope:** the current ichorViz development branch (see `git log` for the
+exact commit).
 This register makes decisions defensible and reviewable; it does **not** certify
 clinical validity or retroactively turn engineering choices into published
 methods. No literature reference below endorses ichorViz or all its defaults.
@@ -386,12 +387,92 @@ justify republishing patient profiles without permission.
 **Evidence:** [CI](../.github/workflows/R-CMD-check.yaml),
 [validation history](downstream-validation.md), [NOTICE](../NOTICE.md),
 [fixture provenance](../inst/extdata/README.md), [README source](../README.Rmd).
-Implementation `1dd2d5d` passed all five CI configurations:
+An earlier development commit passed all five CI configurations:
 [PR run](https://github.com/bauernhofere/ichorViz/actions/runs/34724852864) and
 [push run](https://github.com/bauernhofere/ichorViz/actions/runs/34724851027).
 **Limit:** minimum declared R 4.1 has not been separately verified by these CI
 configurations. Rendering/tests/source compatibility are not independent clinical
 validation or author endorsement. No release DOI/date is invented.
+
+### D19 — Paired directional call agreement on a shared grid — retained policy
+
+**Decision:** `ichor_pair_concordance(a,b)` takes an explicit, same-build pair with
+unique IDs. Reuse fixed-grid BP aggregation with independent call/logR coverage.
+Also require overlapping observed call support (`joint_coverage`) to meet the
+same threshold; disjoint partially observed source spans are not co-observations.
+Partial logR means can still represent different observed portions, so they are
+descriptive heights, not a paired difference.
+Unknown, insufficiently covered, tied **or heterogeneous** call support makes the
+comparison unknown, even if a categorical mode has a unique winner. Retain every
+target bin and its coverage, mixed flags, reason, source-scale and selected-scale
+logR, settings and provenance. No inner join that silently drops unmatched bins.
+
+Classify both-neutral, a-only, b-only, concordant (both altered in the same
+direction), discordant (gain versus loss), or unknown. Deep loss and loss agree
+in direction, not magnitude. Classification uses the selected source-call layer,
+never the sign of logR; `event` is an explicit alternative to `corrected_call`.
+
+**Why:** the manuscript's exact-coordinate inner join is adequate only for matching
+source grids. It discards unmatched/missing calls without an availability track.
+Coverage-aware alignment makes that loss of evidence visible. Independent dominant
+modes could agree while hiding opposing minority events, hence mixed bins are
+unknown in this comparison. Same-direction agreement is not statistical agreement,
+truth, clinical sensitivity or proof of fluid-specific absence in the other sample.
+
+**Sex-chromosome policy:** no NEUT X/Y bins does **not** prove a gain call is false:
+a whole chromosome can genuinely be altered. Default `sex_chromosomes='flag'`
+retains comparable source calls and reports unresolved reference evidence.
+The explicitly conservative `require_neutral` option instead makes X/Y comparisons
+unknown when either sample lacks one distinct observed NEUT-bin CN. This records
+an evidence requirement, not biological reclassification. No source calls are
+erased and no autosomal/diploid baseline is substituted. Even a supported NEUT
+value is only observed evidence (D09), not verification of calling calibration.
+
+**Evidence:** [concordance.R](../R/concordance.R),
+[classification/alignment/sex-policy tests](../tests/testthat/test-concordance.R).
+**Limit:** common bins do not eliminate differing TF, calling thresholds, noise or
+sex-chromosome conventions. Aggregation assumes uniform source-bin values; select
+a grid appropriate to the question. This is a new display measurement, not exact
+reproduction of every manuscript join or a validated diagnostic comparison.
+
+### D20 — Separate agreement colors from bar heights — retained display policy
+
+**Decision:** `plot_ichor_concordance()` stacks original profiles above a target-grid
+track on shared fixed y limits. Default `height='both'` retains both altered
+heights in side-by-side half-bin bars; one-sided categories show the altered sample.
+Half-bin positioning is visual packing, not a sub-bin measurement or breakpoint.
+
+The opt-in `representative` rule reproduces the manuscript's *height policy*:
+
+- both neutral: zero (hidden);
+- one altered sample: that sample's logR;
+- same-direction alterations: mean of the two logR values;
+- opposite-direction alterations: value with larger **absolute** logR, preserving
+  its sign; exact absolute ties choose a.
+
+This is not the larger signed value, not a subtraction, and not a measure of
+"amount of discordance". It can suppress one opposite-direction signal; swapping
+samples reverses the selected sign in equal-absolute discordant ties. Both heights
+must be available for a two-sided representative; NA is never silently ignored.
+The default retains both to avoid this information loss. Averaging continuous
+logR is permitted here, unlike averaging categorical codes; concordant source
+calls do not guarantee matching logR signs or a nonzero mean.
+
+Grey background marks unavailable comparisons/heights, gold strips flag unresolved
+sex-reference evidence, and both-neutral bins stay blank. Exact-zero altered
+heights have a marker without y nudging. Sample colors and agreement colors have
+separate legends. Fitted TF/ploidy remain visible; identifiers can be hidden, but
+plot data/attributes are not anonymized. Raw logR remains default; optional
+ploidy adjustment applies the same run-specific shift to bins, segments and track
+heights. `ylim=c(-2,2)` clips the view only and warns for out-of-range heights.
+
+**Evidence:** [plot-concordance.R](../R/plot-concordance.R), numeric/device tests in
+[test-concordance.R](../tests/testthat/test-concordance.R), and new vdiffr cases in
+[test-concordance-snapshots.R](../tests/testthat/test-concordance-snapshots.R).
+**Limit:** fixed limits/finite pixels can hide magnitude or narrow events. Region
+cropping follows aggregation, so a displayed partial target bin still summarizes
+its complete target interval. Upper points retain source midpoints, lower bars
+use the target grid. No automatic equivalence with the manuscript is claimed.
 
 ## Study decisions that this audit cannot approve
 

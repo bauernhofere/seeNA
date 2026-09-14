@@ -7,21 +7,29 @@
 ichor_neutral_cn(x, call_column = c("corrected_call", "event"))
 }
 \arguments{
-\item{x}{An ichor_sample.}
+\item{x}{An \code{ichor_sample}.}
 
-\item{call_column}{corrected_call (paired with corrected_copy_number) or event
-(paired with copy_number).}
+\item{call_column}{\code{"corrected_call"} (paired with \code{corrected_copy_number})
+or \code{"event"} (paired with \code{copy_number}).}
 }
 \value{
-Three-row data frame for autosome, X and Y: chromosome_class,
-neutral_cn, status, n_neutral_bins, n_observed, n_distinct, and a list-column
-candidates. Status is supported, no_neutral_bins, missing_cn, or ambiguous.
-Check status before using the result in a downstream transform.
+Three-row data frame with \code{chromosome_class}, \code{neutral_cn},
+\code{status}, \code{n_neutral_bins}, \code{n_observed}, \code{n_distinct} and a list-column
+\code{candidates}.
 }
 \description{
-Reports empirical evidence, not a guaranteed biological or run-wide neutral
-baseline. Exactly one distinct observed CN within a chromosome class yields
-a value; absent evidence or multiple distinct values yields NA with a status.
-Never defaults to two copies, uses gender to guess a baseline, or borrows an
-autosomal value for X/Y. Call and CN columns are paired from the same layer.
+Reports, separately for autosomes, X and Y, which copy number the NEUT
+bins of a sample carry, as evidence for a neutral baseline.
+}
+\details{
+Exactly one distinct observed copy number gives a \code{supported} value.
+Absent or conflicting evidence gives \code{NA} with a status of
+\code{no_neutral_bins}, \code{missing_cn} or \code{ambiguous}. No diploid default,
+gender-based guess or borrowing between chromosome classes is applied.
+Check \code{status} before using the value downstream.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
+ichor_neutral_cn(a)
 }

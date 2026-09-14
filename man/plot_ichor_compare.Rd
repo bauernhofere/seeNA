@@ -9,11 +9,13 @@ plot_ichor_compare(
   region = NULL,
   colors = NULL,
   point_size = 0.4,
-  ploidy_adjust = FALSE
+  ploidy_adjust = FALSE,
+  show_sample_id = TRUE
 )
 }
 \arguments{
-\item{samples}{An \code{ichor_sample} or list of samples.}
+\item{samples}{An \code{ichor_sample} or list of samples with unique identifiers
+and the same genome build.}
 
 \item{region}{Optional \code{chr:start-end} region. The default is genome-wide.}
 
@@ -22,14 +24,29 @@ plot_ichor_compare(
 \item{point_size}{Bin point size.}
 
 \item{ploidy_adjust}{Apply \code{\link[=ichor_adjusted_logr]{ichor_adjusted_logr()}} to bins and segments?
-Default FALSE preserves raw output; TRUE requires TF/ploidy from this run.}
+Default \code{FALSE} keeps raw output; \code{TRUE} requires TF and ploidy.}
+
+\item{show_sample_id}{Show sample identifiers in the legend and subtitle?
+Default \code{TRUE}. Set \code{FALSE} to hide the legend and name-bearing subtitle.}
 }
 \value{
 A \code{ggplot} object with an \code{ichor_transform} metadata attribute.
 }
 \description{
-Overlays original bins and segments in shared coordinates, without rebinning.
-One color per sample supports
-paired fluids, longitudinal samples, technical replicates, and arbitrary
-genomic regions.
+Overlays the original bins and segment medians of several samples in shared
+genomic coordinates, one color per sample, genome-wide or within a region.
+}
+\details{
+Bins are never rebinned or re-centered; only segment endpoints are clipped
+in region views. Which samples belong together comes from your study
+design, not from filenames. See the installed methods contract for limits.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+                       file.path(root, "example-a.seg"), genome_build = "hg38")
+b <- read_ichor_sample(file.path(root, "example-b.cna.seg"),
+                       file.path(root, "example-b.seg"), genome_build = "hg38")
+plot_ichor_compare(list(a, b))
+plot_ichor_compare(list(a, b), colors = c("example-a" = "#007A87", "example-b" = "#B34E18"))
 }

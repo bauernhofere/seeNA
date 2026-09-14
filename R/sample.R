@@ -38,22 +38,41 @@
   list(data = d, changes = changes)
 }
 
-#' Construct a validated ichorCNA sample
+#' Read one ichorCNA sample
 #'
-#' Companion source IDs must agree before a user alias is applied. This checks
-#' identity, not whether files came from the same fitted run: supply a single
-#' explicitly chosen run. Missing scientific values are retained.
+#' Reads a bin file plus optional segment and parameter files from one
+#' selected ichorCNA run into a validated `ichor_sample` object.
+#'
+#' @details
+#' Source sample IDs must agree across all supplied files before an alias is
+#' applied. Intervals are validated against the stated genome build; regular
+#' terminal window padding is clipped and recorded in `coordinate_changes`.
+#' Import-time fingerprints are stored for reproducibility. See the installed
+#' methods contract for the full coordinate and identity rules.
 #' @param cna_seg Path to a `.cna.seg` file.
 #' @param seg Optional segment file.
 #' @param params Optional parameter file.
 #' @param genome_build Explicit `"hg19"` or `"hg38"`.
 #' @param sample_id Optional output alias; source identities are still checked.
-#' @param retain_paths Retain absolute source paths? Default FALSE.
-#' @param bounds Default `"window"` clips only terminal padding supported by a
-#'   regular source bin grid (at least two equal-width interior bins). `"error"`
-#'   rejects every out-of-build interval. Explicit `"trim"` clips any straddling
-#'   interval. Every change is recorded. No policy verifies or guesses the build.
-#' @return A validated `ichor_sample` with schema version 1 and import fingerprints.
+#' @param retain_paths Retain absolute source paths in provenance? Default `FALSE`.
+#' @param bounds Out-of-build interval policy. Default `"window"` clips only
+#'   terminal padding supported by a regular source bin grid. `"error"`
+#'   rejects every out-of-build interval. `"trim"` clips any straddling
+#'   interval with a warning. Every change is recorded.
+#' @return A validated `ichor_sample` (schema version 1) with elements
+#'   `sample_id`, `genome_build`, `bins`, `segments`, `params`,
+#'   `coordinate_changes` and `provenance`.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(
+#'   file.path(root, "example-a.cna.seg"),
+#'   file.path(root, "example-a.seg"),
+#'   file.path(root, "example-a.params.txt"),
+#'   genome_build = "hg38"
+#' )
+#' a
+#' head(a$bins)
+#' a$params
 #' @export
 read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
                               sample_id = NULL, retain_paths = FALSE,
@@ -73,7 +92,7 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
   if (length(source_ids) != 1L || is.na(source_ids) || !nzchar(source_ids)) {
     .ichor_abort("Source sample IDs disagree across bins, segments, or parameters.", "ichorviz_identity_error")
   }
-  id <- sample_id %||% source_ids
+  id <- .default_if_null(sample_id, source_ids)
   if (!is.character(id) || length(id) != 1L || is.na(id) || !nzchar(trimws(id))) .ichor_abort("sample_id must be a non-empty character scalar.")
   after <- .fingerprint(paths)
   if (!identical(before, after)) .ichor_abort("Input files changed while being read.", "ichorviz_file_error")
@@ -107,8 +126,16 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
 }
 
 #' Validate an ichorCNA sample
+#'
+#' Checks an `ichor_sample` for schema version, chromosome names, sorted
+#' non-overlapping in-build intervals, numeric measurements and parameter
+#' ranges.
 #' @param x An `ichor_sample` object.
 #' @return `x`, invisibly; invalid objects raise classed errors.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
+#' validate_ichor_sample(a)
 #' @export
 validate_ichor_sample <- function(x) {
   if (!inherits(x, "ichor_sample") || !identical(x$schema_version, 1L)) .ichor_abort("Expected ichor_sample schema version 1.")

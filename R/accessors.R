@@ -1,6 +1,13 @@
 #' Read the fitted tumor fraction
-#' @param x An ichor_sample.
-#' @return Numeric scalar between zero and one, or NA_real_ if unavailable.
+#' @param x An `ichor_sample`.
+#' @return Numeric scalar between zero and one (a fraction, not a percent), or
+#'   `NA_real_` if no parameter file was supplied.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+#'                        params = file.path(root, "example-a.params.txt"),
+#'                        genome_build = "hg38")
+#' ichor_tf(a)
 #' @export
 ichor_tf <- function(x) {
   validate_ichor_sample(x)
@@ -8,8 +15,14 @@ ichor_tf <- function(x) {
 }
 
 #' Read fitted tumor ploidy
-#' @param x An ichor_sample.
-#' @return Positive numeric scalar, or NA_real_ if parameters are unavailable.
+#' @param x An `ichor_sample`.
+#' @return Positive numeric scalar, or `NA_real_` if parameters are unavailable.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+#'                        params = file.path(root, "example-a.params.txt"),
+#'                        genome_build = "hg38")
+#' ichor_ploidy(a)
 #' @export
 ichor_ploidy <- function(x) {
   validate_ichor_sample(x)
@@ -26,17 +39,26 @@ ichor_ploidy <- function(x) {
 
 #' Apply the upstream ichorCNA plotting shift
 #'
-#' Adds `log2((TF * ploidy + (1 - TF) * 2) / 2)` to source logR or segment
-#' medians, matching the formula in v0.4 plotGWSolution/plotCNlogRByChr. Exported
-#' parameters are rounded, so results need not be identical to a plot made from
-#' full-precision in-memory fitted parameters. This is a display transform, not
-#' purity correction, integer copy-number estimation or call reassignment. It
-#' does not guarantee that every gain/loss lies above/below zero, particularly
-#' on sex chromosomes or in noisy bins. Raw input values are never modified.
-#' @param x An ichor_sample with finite fitted TF and ploidy.
-#' @param component Bins (logR) or segments (median).
-#' @return Numeric vector in source-table order, retaining NA. For an absent
-#'   segment table, returns numeric(0); fitted parameters are still required.
+#' Adds `log2((TF * ploidy + (1 - TF) * 2) / 2)` to bin log ratios or segment
+#' medians, matching the formula ichorCNA v0.4 uses when plotting.
+#'
+#' @details
+#' This is a display transform computed from the exported (rounded)
+#' parameters. It does not modify the sample, produce integer copy numbers or
+#' reassign calls, and it does not guarantee that every gain or loss lies
+#' above or below zero. See the installed methods contract for limits.
+#' @param x An `ichor_sample` with finite fitted TF and ploidy.
+#' @param component `"bins"` (logR) or `"segments"` (median).
+#' @return Numeric vector in source-table order, retaining `NA`. For an
+#'   absent segment table, returns `numeric(0)`.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+#'                        file.path(root, "example-a.seg"),
+#'                        file.path(root, "example-a.params.txt"),
+#'                        genome_build = "hg38")
+#' ichor_adjusted_logr(a)
+#' ichor_adjusted_logr(a, "segments")
 #' @export
 ichor_adjusted_logr <- function(x, component = c("bins", "segments")) {
   validate_ichor_sample(x)
@@ -48,18 +70,25 @@ ichor_adjusted_logr <- function(x, component = c("bins", "segments")) {
 
 #' Summarize copy numbers observed in neutral-called bins
 #'
-#' Reports empirical evidence, not a guaranteed biological or run-wide neutral
-#' baseline. Exactly one distinct observed CN within a chromosome class yields
-#' a value; absent evidence or multiple distinct values yields NA with a status.
-#' Never defaults to two copies, uses gender to guess a baseline, or borrows an
-#' autosomal value for X/Y. Call and CN columns are paired from the same layer.
-#' @param x An ichor_sample.
-#' @param call_column corrected_call (paired with corrected_copy_number) or event
-#'   (paired with copy_number).
-#' @return Three-row data frame for autosome, X and Y: chromosome_class,
-#'   neutral_cn, status, n_neutral_bins, n_observed, n_distinct, and a list-column
-#'   candidates. Status is supported, no_neutral_bins, missing_cn, or ambiguous.
-#'   Check status before using the result in a downstream transform.
+#' Reports, separately for autosomes, X and Y, which copy number the NEUT
+#' bins of a sample carry, as evidence for a neutral baseline.
+#'
+#' @details
+#' Exactly one distinct observed copy number gives a `supported` value.
+#' Absent or conflicting evidence gives `NA` with a status of
+#' `no_neutral_bins`, `missing_cn` or `ambiguous`. No diploid default,
+#' gender-based guess or borrowing between chromosome classes is applied.
+#' Check `status` before using the value downstream.
+#' @param x An `ichor_sample`.
+#' @param call_column `"corrected_call"` (paired with `corrected_copy_number`)
+#'   or `"event"` (paired with `copy_number`).
+#' @return Three-row data frame with `chromosome_class`, `neutral_cn`,
+#'   `status`, `n_neutral_bins`, `n_observed`, `n_distinct` and a list-column
+#'   `candidates`.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
+#' ichor_neutral_cn(a)
 #' @export
 ichor_neutral_cn <- function(x, call_column = c("corrected_call", "event")) {
   validate_ichor_sample(x)

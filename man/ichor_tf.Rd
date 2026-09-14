@@ -7,11 +7,19 @@
 ichor_tf(x)
 }
 \arguments{
-\item{x}{An ichor_sample.}
+\item{x}{An \code{ichor_sample}.}
 }
 \value{
-Numeric scalar between zero and one, or NA_real_ if unavailable.
+Numeric scalar between zero and one (a fraction, not a percent), or
+\code{NA_real_} if no parameter file was supplied.
 }
 \description{
 Read the fitted tumor fraction
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+                       params = file.path(root, "example-a.params.txt"),
+                       genome_build = "hg38")
+ichor_tf(a)
 }

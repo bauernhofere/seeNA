@@ -17,26 +17,39 @@ read_ichor_cohort(
 \arguments{
 \item{manifest}{CSV/TSV path or data frame.}
 
-\item{genome_build}{Explicit shared build.}
+\item{genome_build}{Explicit shared build, \code{"hg19"} or \code{"hg38"}.}
 
 \item{workers}{Positive integer; Unix uses fork workers, Windows sequential.}
 
-\item{root}{Required for relative paths in a data-frame manifest. File manifests
-resolve paths against their own directory.}
+\item{root}{Required for relative paths in a data-frame manifest. File
+manifests resolve paths against their own directory.}
 
-\item{retain_paths}{Retain absolute paths in sample provenance? Default FALSE.}
+\item{retain_paths}{Retain absolute paths in sample provenance? Default \code{FALSE}.}
 
 \item{bounds}{Interval bounds policy passed to \code{\link[=read_ichor_sample]{read_ichor_sample()}}.}
 
-\item{metadata_columns}{Optional annotation allowlist; NULL retains all
-non-file columns. \code{character()} retains only sample_id.}
+\item{metadata_columns}{Optional annotation allowlist; \code{NULL} retains all
+non-file columns, \code{character()} retains only \code{sample_id}.}
 }
 \value{
-A validated \code{ichor_cohort} in manifest order.
+A validated \code{ichor_cohort} with \code{samples} and \code{metadata} in
+manifest order.
 }
 \description{
-Required columns: \code{sample_id}, \code{cna_seg}; optional: \code{seg}, \code{params}.
-Other columns are user-supplied plot annotations, not automatically safe to
-share. Manifest IDs are aliases; companion source identities are still checked.
-Loading is atomic: any failed sample aborts the entire import.
+Reads every sample listed in a CSV/TSV manifest or data frame into a
+validated \code{ichor_cohort}, keeping manifest order and extra columns as
+sample metadata.
+}
+\details{
+Required columns: \code{sample_id}, \code{cna_seg}; optional: \code{seg}, \code{params}. Other
+columns become plot annotations; use \code{metadata_columns} to allowlist them.
+Manifest IDs are aliases; source identities in the files are still checked.
+Loading is atomic: any failed sample aborts the whole import with one
+message listing every failure.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+cohort
+cohort$metadata
 }

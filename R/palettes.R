@@ -1,6 +1,10 @@
 #' Default copy-number state colors
 #'
+#' The named palette used by [plot_ichor_profile()] for the four display
+#' states returned by [ichor_call_state()].
 #' @return A named character vector.
+#' @examples
+#' ichor_state_colors()
 #' @export
 ichor_state_colors <- function() {
   c("Deep loss" = "#A6E4C0", "Loss" = "#1E9E5E",

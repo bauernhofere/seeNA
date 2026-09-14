@@ -25,3 +25,6 @@ Meta/
 !docs/figures/README-region-1.png
 !docs/figures/README-profile-1.png
 !docs/figures/README-heatmap-1.png
+!docs/figures/README-concordance-1.png
+# vdiffr snapshots are fixture-only test artifacts and must be committed.
+!tests/testthat/_snaps/**/*.svg

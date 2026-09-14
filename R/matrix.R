@@ -41,22 +41,37 @@
 
 #' Build a coverage-aware cohort matrix
 #'
-#' Continuous values use observed-base-pair-weighted means. Calls use the
-#' greatest base-pair support among categories; ties return NA and heterogeneous
-#' bins are marked in `mixed`. Missing/unknown observations never imply neutral.
-#' Coverage is non-missing source overlap divided by actual target-bin width.
+#' Rebins every sample in a cohort onto a fixed-width genome grid and returns
+#' a sample-by-bin matrix of one chosen measurement together with matching
+#' `coverage` and `mixed` layers.
+#'
+#' @details
+#' Continuous values use base-pair-weighted means of the overlapping source
+#' bins. Calls use the category with the greatest base-pair support; ties give
+#' `NA` and heterogeneous bins are flagged in `mixed`. Coverage is observed
+#' overlap divided by target-bin width; cells below `min_coverage` or with no
+#' observations are `NA`. Missing observations are never treated as neutral.
+#' See the installed methods contract for the formulas.
 #' @param cohort An `ichor_cohort`.
 #' @param bin_size Positive integer base-pair width.
-#' @param value Explicit measurement: `logR`, `corrected_copy_number`,
-#'   `copy_number`, or `call`.
-#' @param call_column For call matrices, `corrected_call` or `event`; no fallback.
+#' @param value Explicit measurement: `"logR"`, `"corrected_copy_number"`,
+#'   `"copy_number"`, or `"call"`.
+#' @param call_column For call matrices, `"corrected_call"` or `"event"`.
 #' @param min_coverage Minimum observed fraction (default 1). Values with less
-#'   support are NA; zero coverage always produces NA.
+#'   support are `NA`; zero coverage always produces `NA`.
 #' @param chromosomes Chromosomes to include, normalized and genomically sorted.
 #' @param max_cells Allocation guard; maximum number of sample-by-bin cells.
-#'   Values, coverage and mixed layers require at least 20 bytes per cell.
-#' @return A validated `ichor_matrix`, with values, coverage, mixed flags,
-#'   genomic bins, metadata, transformation settings and import provenance.
+#' @return A validated `ichor_matrix` with `values`, `coverage`, `mixed`,
+#'   `bins`, `samples`, transformation settings and import provenance.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+#' m <- ichor_matrix(cohort, value = "call", chromosomes = "1")
+#' m
+#' m$values[, 1:4]
+#' m$coverage[, 1:4]
+#' logr <- ichor_matrix(cohort, value = "logR", bin_size = 5e5, chromosomes = "1")
+#' logr$values[, 1:4]
 #' @export
 ichor_matrix <- function(cohort, bin_size = 1e6, value,
                          call_column = c("corrected_call", "event"), min_coverage = 1,
@@ -109,8 +124,15 @@ ichor_matrix <- function(cohort, bin_size = 1e6, value,
 }
 
 #' Validate a cohort matrix
+#'
+#' Checks that values, coverage and mixed layers align with the bin grid and
+#' sample metadata and obey the matrix measurement and coverage rules.
 #' @param x An `ichor_matrix`.
 #' @return `x`, invisibly.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+#' validate_ichor_matrix(ichor_matrix(cohort, value = "logR", chromosomes = "2"))
 #' @export
 validate_ichor_matrix <- function(x) {
   if (!inherits(x, "ichor_matrix") || !identical(x$schema_version, 1L) ||

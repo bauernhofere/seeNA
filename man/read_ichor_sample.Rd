@@ -2,7 +2,7 @@
 % Please edit documentation in R/sample.R
 \name{read_ichor_sample}
 \alias{read_ichor_sample}
-\title{Construct a validated ichorCNA sample}
+\title{Read one ichorCNA sample}
 \usage{
 read_ichor_sample(
   cna_seg,
@@ -25,18 +25,38 @@ read_ichor_sample(
 
 \item{sample_id}{Optional output alias; source identities are still checked.}
 
-\item{retain_paths}{Retain absolute source paths? Default FALSE.}
+\item{retain_paths}{Retain absolute source paths in provenance? Default \code{FALSE}.}
 
-\item{bounds}{Default \code{"window"} clips only terminal padding supported by a
-regular source bin grid (at least two equal-width interior bins). \code{"error"}
-rejects every out-of-build interval. Explicit \code{"trim"} clips any straddling
-interval. Every change is recorded. No policy verifies or guesses the build.}
+\item{bounds}{Out-of-build interval policy. Default \code{"window"} clips only
+terminal padding supported by a regular source bin grid. \code{"error"}
+rejects every out-of-build interval. \code{"trim"} clips any straddling
+interval with a warning. Every change is recorded.}
 }
 \value{
-A validated \code{ichor_sample} with schema version 1 and import fingerprints.
+A validated \code{ichor_sample} (schema version 1) with elements
+\code{sample_id}, \code{genome_build}, \code{bins}, \code{segments}, \code{params},
+\code{coordinate_changes} and \code{provenance}.
 }
 \description{
-Companion source IDs must agree before a user alias is applied. This checks
-identity, not whether files came from the same fitted run: supply a single
-explicitly chosen run. Missing scientific values are retained.
+Reads a bin file plus optional segment and parameter files from one
+selected ichorCNA run into a validated \code{ichor_sample} object.
+}
+\details{
+Source sample IDs must agree across all supplied files before an alias is
+applied. Intervals are validated against the stated genome build; regular
+terminal window padding is clipped and recorded in \code{coordinate_changes}.
+Import-time fingerprints are stored for reproducibility. See the installed
+methods contract for the full coordinate and identity rules.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(
+  file.path(root, "example-a.cna.seg"),
+  file.path(root, "example-a.seg"),
+  file.path(root, "example-a.params.txt"),
+  genome_build = "hg38"
+)
+a
+head(a$bins)
+a$params
 }

@@ -7,11 +7,18 @@
 ichor_ploidy(x)
 }
 \arguments{
-\item{x}{An ichor_sample.}
+\item{x}{An \code{ichor_sample}.}
 }
 \value{
-Positive numeric scalar, or NA_real_ if parameters are unavailable.
+Positive numeric scalar, or \code{NA_real_} if parameters are unavailable.
 }
 \description{
 Read fitted tumor ploidy
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+                       params = file.path(root, "example-a.params.txt"),
+                       genome_build = "hg38")
+ichor_ploidy(a)
 }

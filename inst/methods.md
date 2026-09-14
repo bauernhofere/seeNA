@@ -130,8 +130,9 @@ metadata in `ichor_transform`. This is not purity deconvolution, integer CN, or 
 promise that every gain/loss will lie above/below zero. Chromosome-X conventions
 and noise still matter; neither y=0 nor gender alone identifies neutral CN.
 
-Heatmaps preserve manifest order by default; identifiers are hidden unless
-requested. Categorical colors are discrete. Continuous default scales include
+Heatmaps preserve manifest order by default. Every plot shows user-chosen sample
+identifiers by default; `show_sample_id = FALSE` (profiles, comparisons, regions)
+or `show_row_names = FALSE` (heatmaps) omits them. Categorical colors are discrete. Continuous default scales include
 observed extremes (CN 2 is a reference color, not a neutrality decision). Custom
 colors may intentionally saturate: authors must report their scale. Unknown,
 tied and insufficient-coverage cells use the NA color. Inspect coverage/mixed
@@ -147,6 +148,44 @@ measurement or an externally supplied row order when this assumption is unwanted
 The common-bin subset can be biased by systematic filtering. No global clustering
 by default. Annotation colors are deterministic; supply fixed palettes when
 comparing figures from different subsets.
+
+## Paired directional agreement
+
+`ichor_pair_concordance(a,b)` requires an explicit pair with unique IDs and the
+same build. Calls and logR are aligned independently with the matrix BP rules
+and separate coverage. Joint observed call support must also meet `min_coverage`;
+disjoint partial source spans cannot become apparent co-observations. With relaxed
+coverage, logR means can still summarize different observed portions of a bin.
+All reference-grid bins remain. Missing, under-covered,
+tied or mixed calls make a comparison unknown; a known call with missing logR
+remains classified but has an unavailable height. No calls are inferred from
+logR sign, fitted ploidy or filenames.
+
+Both-neutral, a-only, b-only, same-direction altered (concordant), opposite-
+direction altered (discordant), and unknown are distinct classes. Loss and deep
+loss agree in direction, not amplitude. Baseline status is reported per sample
+and chromosome class. Default sex policy `flag` retains source-call comparisons
+but flags missing/ambiguous X/Y NEUT-bin evidence. Opt-in `require_neutral` makes
+those X/Y comparisons unknown instead. No NEUT bins is not proof of an invalid
+call: genuinely altered whole chromosomes can lack them. No baseline is guessed.
+
+The paired plot shows original profiles above target-bin bars, not a numerical
+subtraction. Default `height='both'` packs a/b into left/right half-bin bars when
+both are altered, retaining both values; for one-sided calls only the altered
+height contributes. `representative` instead uses the one-sided height, mean
+for same-direction alterations, or larger absolute height for opposite directions
+(ties choose a). Both values are required for a two-sided representative; its
+sign can change when swapping tied discordant samples. Calls are never averaged.
+
+Both-neutral bins are blank; grey marks unavailable calls/selected heights;
+gold marks unresolved sex-reference evidence. Zero altered heights receive a
+marker without nudging. Separate sample/agreement legends prevent color-semantic
+mixing. Both panels share fixed y limits (default -2,2) and the selected raw or
+upstream-adjusted scale. Out-of-view values warn; source values are retained.
+Regions crop the display after aggregation, with original upper-bin midpoints.
+Data/settings/provenance and view settings are attached to the ggplot object.
+These are display policies, not validated biological agreement statistics; see
+D19–D20 in the repository decision register.
 
 ## Reproducibility and privacy
 

@@ -10,5 +10,9 @@ ichor_state_colors()
 A named character vector.
 }
 \description{
-Default copy-number state colors
+The named palette used by \code{\link[=plot_ichor_profile]{plot_ichor_profile()}} for the four display
+states returned by \code{\link[=ichor_call_state]{ichor_call_state()}}.
+}
+\examples{
+ichor_state_colors()
 }

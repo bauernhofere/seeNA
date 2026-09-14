@@ -51,12 +51,22 @@
 
 #' Read an ichorCNA bin-level file
 #'
-#' Accepts one sample per file. Mixed sample prefixes and duplicate semantic
-#' columns are errors. Missing scientific values remain NA; malformed values
-#' are errors. Coordinates are 1-based closed intervals.
+#' Reads one sample's `.cna.seg` file and returns a normalized data frame with
+#' `chr`, `start`, `end`, `logR` and any optional call and copy-number columns.
+#'
+#' @details
+#' Sample-prefixed column names such as `sample.logR` are stripped; files with
+#' several sample prefixes are rejected. Missing values stay `NA`; malformed
+#' values and ambiguous columns raise a classed schema error. Coordinates are
+#' 1-based closed intervals.
 #' @param path Path to a `.cna.seg` file.
 #' @param sample_id Optional output alias, not a selector for multi-sample files.
 #' @return Normalized data frame with `sample_id` and `source_id` attributes.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' bins <- read_ichor_cna(file.path(root, "example-a.cna.seg"))
+#' head(bins)
+#' attr(bins, "sample_id")
 #' @export
 read_ichor_cna <- function(path, sample_id = NULL) {
   path <- .assert_file(path, "cna_seg")
@@ -88,16 +98,21 @@ read_ichor_cna <- function(path, sample_id = NULL) {
   id <- if (length(prefixes)) prefixes[1] else sub("\\.cna\\.seg$", "", basename(path))
   out <- .normalize_table(raw, spec, c("chr", "start", "end", "logR"))
   attr(out, "source_id") <- id
-  attr(out, "sample_id") <- sample_id %||% id
+  attr(out, "sample_id") <- .default_if_null(sample_id, id)
   out
 }
 
 #' Read an ichorCNA segment file
 #'
-#' Supports v0.4 `.seg` and its separate `.seg.txt` export. The latter uses
-#' `chrom`, `num.mark`, and `seg.median.logR` headers.
+#' Reads a `.seg` file, or the separate `.seg.txt` export with `chrom`,
+#' `num.mark` and `seg.median.logR` headers, into a normalized data frame.
+#'
 #' @param path Path to a segment file.
-#' @return A data frame with normalized segment columns.
+#' @return A data frame with normalized segment columns and a `source_id`
+#'   attribute.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' read_ichor_segments(file.path(root, "example-a.seg"))
 #' @export
 read_ichor_segments <- function(path) {
   raw <- .read_table(.assert_file(path, "seg"))
@@ -117,10 +132,19 @@ read_ichor_segments <- function(path) {
 
 #' Read an ichorCNA parameter file
 #'
-#' Accepts single-sample tabular and/or key-value sections. Repeated scientific
-#' fields must agree numerically. Empty files and multiple samples are errors.
+#' Reads the fitted tumor fraction, ploidy and gender of one selected sample
+#' from a `.params.txt` file, accepting the tabular header and/or the
+#' key-value section.
+#'
+#' @details
+#' Repeated fields must agree numerically. The appended candidate-solution
+#' table is ignored as diagnostics. Empty files and files describing several
+#' samples raise a schema error.
 #' @param path Path to a `.params.txt` file.
 #' @return One-row data frame: `sample_id`, `tumor_fraction`, `ploidy`, `gender`.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' read_ichor_params(file.path(root, "example-a.params.txt"))
 #' @export
 read_ichor_params <- function(path) {
   path <- .assert_file(path, "params")
@@ -161,8 +185,11 @@ read_ichor_params <- function(path) {
   if (!any(c("tumor_fraction", "ploidy") %in% names(values))) {
     .ichor_abort("No recognized scientific parameters.", "ichorviz_schema_error")
   }
-  data.frame(sample_id = values$sample %||% sub("\\.params\\.txt$", "", basename(path)),
-             tumor_fraction = values$tumor_fraction %||% NA_real_,
-             ploidy = values$ploidy %||% NA_real_, gender = values$gender %||% NA_character_,
+  source_sample <- values$sample
+  if (is.null(source_sample) || is.na(source_sample)) source_sample <- sub("\\.params\\.txt$", "", basename(path))
+  data.frame(sample_id = source_sample,
+             tumor_fraction = .default_if_null(values$tumor_fraction, NA_real_),
+             ploidy = .default_if_null(values$ploidy, NA_real_),
+             gender = .default_if_null(values$gender, NA_character_),
              stringsAsFactors = FALSE)
 }

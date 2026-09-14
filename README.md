@@ -8,13 +8,16 @@ output: github_document
 
 # ichorViz
 
-**From ichorCNA output files to comparable, auditable figures—in R.**
+**From ichorCNA output files to comparable, auditable figures in R.**
 
 [![R-CMD-check](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml/badge.svg?branch=fix%2Fscientific-contracts)](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml?query=branch%3Afix%2Fscientific-contracts)
 
-Read individual profiles, compare explicitly related samples, zoom into a locus,
-and build annotated cohort heatmaps. Keep the original calls, missingness and
-input fingerprints alongside your plots.
+ichorViz reads existing [ichorCNA](https://github.com/GavinHaLab/ichorCNA)
+results and turns them into plots: single genome-wide profiles, overlays of
+related samples, zoomed regions, and annotated cohort heatmaps. It does not
+run ichorCNA, choose a fitted solution, infer sample pairing, or call
+copy-number alterations. Original calls, missing values and input fingerprints
+stay with the plots.
 
 | View | What you get |
 |---|---|
@@ -24,24 +27,19 @@ input fingerprints alongside your plots.
 | **Cohort** | Coverage-aware matrices and annotated ComplexHeatmap objects |
 | **Your style** | Ordinary ggplot objects, named palettes and public transformation helpers |
 
-ichorViz reads existing [ichorCNA](https://github.com/GavinHaLab/ichorCNA)
-results. It **does not fit ichorCNA, select a best run, infer pairs, or call CNAs**.
-
-> **Private development version.** The implementation shown here is on the draft
-> hardening branch, not yet merged to `main`. CI is not manuscript approval;
-> no public release or DOI is claimed. See the [decision register](docs/decision-register.md)
-> for rationale, sources, alternatives and outstanding approval gates.
+> **Private development version.** This is the draft hardening branch, not a
+> public release; see the [decision register](docs/decision-register.md) for
+> rationale and open approval gates.
 
 ## Install
 
 
 ``` r
 # install.packages("remotes")
-# Requires private-repository access. Pin the tested implementation:
-remotes::install_github(
-  "bauernhofere/ichorViz",
-  ref = "1dd2d5d92ab1fa6b6edeb4b98153096351b88784"
-)
+# Requires private-repository access.
+remotes::install_github("bauernhofere/ichorViz", ref = "fix/scientific-contracts")
+# Record the exact commit you installed alongside your results:
+packageDescription("ichorViz")$RemoteSha
 
 # Optional heatmap dependencies:
 # install.packages("BiocManager")
@@ -49,10 +47,11 @@ BiocManager::install(c("ComplexHeatmap", "circlize"))
 # install.packages("ragg")  # optional headless rasterization
 ```
 
-## Start with one sample
+## Quick start: one sample
 
-Supply a build and files from the **same selected run**. Only the bin file is
-required; segment and parameter files add their respective information.
+Supply the genome build and the files from one selected ichorCNA run. Only the
+bin file is required; the segment and parameter files add segment medians and
+tumor fraction / ploidy.
 
 
 ``` r
@@ -64,14 +63,42 @@ a <- read_ichor_sample(
   file.path(root, "example-a.params.txt"),
   genome_build = "hg38"
 )
+a
+#> <ichor_sample> example-a
+#>   genome: hg38
+#>   bins: 12
+#>   TF: 0.125
 ```
 
-**Every picture below uses only the two bundled test fixtures.** These are
-hand-authored format examples, **not patient data, fitted ichorCNA outputs or
-biological simulations**. Each contains just twelve bins on chromosomes 1, 2
-and X; blank genomic space is deliberately not filled with invented observations.
+All pictures below use only the two bundled test fixtures: twelve hand-written
+bins on chromosomes 1, 2 and X, not patient data or fitted ichorCNA output.
+Blank genomic space is real absence, not filled in.
 
-### Compare at a locus
+
+``` r
+plot_ichor_profile(a, point_size = 1.8) +
+  ggplot2::labs(
+    title = "A profile on reference-length axes",
+    subtitle = "Test fixture only | 12 bins on chromosomes 1, 2 and X",
+    caption = "Empty space = no fixture observations; raw segments are grey"
+  ) +
+  ggplot2::theme(
+    panel.grid.major = ggplot2::element_blank(),
+    axis.text.x = ggplot2::element_text(size = 8),
+    plot.title = ggplot2::element_text(face = "bold", color = "#183B4E"),
+    legend.position = "bottom"
+  )
+```
+
+<img src="docs/figures/README-profile-1.png" alt="Sparse whole-genome test profile with chromosome-length axes, call-colored bins and grey segments. Most of the genome has no fixture observations." width="100%" />
+
+Plot functions return ordinary **ggplot objects**: add themes, labels or view
+limits, or export with `ggplot2::ggsave()`. Named `colors` arguments change
+the palette, not the calls. Every plot shows the sample identifier by default;
+pass `show_sample_id = FALSE` (or `show_row_names = FALSE` for heatmaps) to
+omit it.
+
+## Compare samples and zoom into a locus
 
 
 ``` r
@@ -93,37 +120,55 @@ plot_ichor_region(
 
 <img src="docs/figures/README-region-1.png" alt="Two test fixtures on chromosome 1, 0–4 Mb: four original bin midpoints per sample and their segment medians; not patient results." width="100%" />
 
-Use `plot_ichor_compare(list(a, b))` for a genome-wide overlay. Sample relationships
-come from your study design, never filename heuristics.
+Use `plot_ichor_compare(list(a, b))` for a genome-wide overlay. You decide
+which samples belong together; the package does not infer pairs from filenames.
 
-### A whole-genome profile, with your styling
+## Paired call-agreement track
+
+Compare an explicitly supplied pair on a coverage-aware grid. The upper panel
+keeps original profile points; the lower panel labels one-sided alterations,
+same-direction alterations and opposite directions. Missing or mixed calls stay
+unknown. This is **call agreement**, not the numerical difference between fluids.
 
 
 ``` r
-plot_ichor_profile(a, point_size = 1.8) +
-  ggplot2::labs(
-    title = "A profile on reference-length axes",
-    subtitle = "Test fixture only | 12 bins on chromosomes 1, 2 and X",
-    caption = "Empty space = no fixture observations; raw segments are grey"
-  ) +
-  ggplot2::theme(
-    panel.grid.major = ggplot2::element_blank(),
-    axis.text.x = ggplot2::element_text(size = 8),
-    plot.title = ggplot2::element_text(face = "bold", color = "#183B4E"),
-    legend.position = "bottom"
-  )
+plot_ichor_concordance(
+  a, b, region = "chr1:1-5000000", ploidy_adjust = TRUE,
+  sample_labels = c("A", "B"), point_size = 2, show_sample_id = FALSE
+) + ggplot2::labs(title = "Paired agreement | test fixtures only")
 ```
 
-<img src="docs/figures/README-profile-1.png" alt="Sparse whole-genome test profile with chromosome-length axes, call-colored bins and grey segments. Most of the genome has no fixture observations." width="100%" />
+<img src="docs/figures/README-concordance-1.png" alt="Two test-fixture profiles above a directional call-agreement track. A-only gains are teal; the fifth 1-Mb bin is grey for absent evidence. No patient data." width="100%" />
 
-Plot functions return ordinary **ggplot objects**. Add themes, labels or explicit
-view limits, or export with `ggplot2::ggsave()`. Named `colors` arguments control
-sample or state palettes; they never change the underlying calls.
+Within each target bin, A is shown on the left and B on the right; one-sided
+categories show only the altered sample. `height = "representative"` instead
+uses the manuscript's mean/largest-absolute-height rule (ties choose A). Neither
+height rule reassigns calls based on logR sign. `ylim` is shared by both panels;
+out-of-view heights warn instead of silently changing the input.
 
-### An annotated cohort heatmap
 
-Choose the measurement explicitly. Here, `value = "call"` shows **corrected call
-categories**, not absolute copy number or CN minus ploidy.
+``` r
+agreement <- ichor_pair_concordance(a, b, chromosomes = "1")
+agreement[1:5, c("start", "call_a", "call_b", "concordance")]
+#>     start  call_a  call_b  concordance
+#> 1       1 Neutral Neutral both_neutral
+#> 2 1000001 Neutral Neutral both_neutral
+#> 3 2000001    Gain Neutral       a_only
+#> 4 3000001    Gain Neutral       a_only
+#> 5 4000001    <NA>    <NA>      unknown
+```
+
+On X/Y, missing or ambiguous NEUT-bin reference evidence is flagged in gold,
+not taken as proof that source calls are wrong. For an explicitly conservative
+view, use `sex_chromosomes = "require_neutral"` to make those comparisons unknown.
+No diploid or autosomal reference is substituted. See D19–D20 in the
+[decision register](docs/decision-register.md).
+
+## Cohort heatmap
+
+Read a manifest (CSV/TSV or data frame with `sample_id`, `cna_seg` and
+optional `seg`, `params` and annotation columns), then build a matrix of one
+explicit measurement. Here `value = "call"` shows corrected call categories.
 
 
 ``` r
@@ -131,11 +176,17 @@ cohort <- read_ichor_cohort(
   file.path(root, "example-manifest.csv"), genome_build = "hg38"
 )
 m <- ichor_matrix(cohort, value = "call", chromosomes = c("1", "2", "X"))
+m
+#> <ichor_matrix>
+#>   2 samples x 649 bins
+#>   value: call
+#>   bin size: 1e+06 bp
+#>   minimum coverage: 1
 ```
 
-For this tiny illustration, retain only the first **5 Mb of each chromosome**.
-The fifth bin has no fixture input and stays NA. Subset the coordinates and all
-three aligned matrices together; nothing is imputed or rescaled.
+For this tiny illustration, keep only the first 5 Mb of each chromosome. The
+fifth bin has no fixture input and stays NA. Subset the coordinates and all
+three aligned layers together.
 
 
 ``` r
@@ -151,7 +202,7 @@ validate_ichor_matrix(view)
 
 ``` r
 h <- plot_ichor_heatmap(
-  view, annotation_columns = "condition", show_row_names = TRUE,
+  view, annotation_columns = "condition",
   annotation_colors = list(condition = c(A = "#007A87", B = "#B34E18"))
 )
 missing_key <- ComplexHeatmap::Legend(
@@ -167,12 +218,16 @@ ComplexHeatmap::draw(
 
 <img src="docs/figures/README-heatmap-1.png" alt="Two-row corrected-call heatmap of test fixtures: first five 1-Mb bins of chromosomes 1, 2 and X. The fifth bin on each chromosome is grey for absent input; condition A and B are illustrative metadata." width="100%" />
 
-For your full cohort, plot `m` directly. Rows retain manifest order unless you
-explicitly request another order. Inspect `m$coverage` and `m$mixed` before
-interpreting NA cells or heterogeneous target bins. Upstream filtering can leave
-substantial gaps; an absent bin is **not a neutral call**.
+For a full cohort, plot `m` directly. Rows keep manifest order unless you ask
+for another order. Check `m$coverage` and `m$mixed` before interpreting NA
+cells: ichorCNA filters bins, and an absent bin is not a neutral call.
 
-## Raw or upstream-adjusted logR? Make it explicit
+## Raw or ploidy-adjusted logR
+
+Raw logR is the default. `ploidy_adjust = TRUE` adds
+`log2((TF * ploidy + (1 - TF) * 2) / 2)` to both bins and segment medians,
+reproducing the upstream plotting shift from the exported parameters. It is a
+display transform, not a purity correction or a new call.
 
 
 ``` r
@@ -183,20 +238,10 @@ ichor_tf(a)                         # fitted fraction, not percent
 ichor_ploidy(a)                     # fitted tumor ploidy
 ichor_adjusted_logr(a)              # adjusted bins in input order
 ichor_adjusted_logr(a, "segments")  # same shift for segment medians
-ichor_neutral_cn(a)                 # observed evidence + ambiguity/missingness status
+ichor_neutral_cn(a)                 # CN observed in NEUT bins, with status
 ichor_genome_layout("hg38")         # reference lengths, offsets and midpoints
 ichor_call_state(c("NEUT", "AMP"))  # mapping used by ichor_state_colors()
 ```
-
-Raw logR remains the default. `ploidy_adjust = TRUE` adds
-`log2((TF * ploidy + (1 - TF) * 2) / 2)` to **both** bins and segment medians,
-matching the upstream plotting formula with exported parameters. It is not a
-purity correction or new CN call, and does not guarantee the sign of every
-gain/loss. Missing parameters are an error when adjustment is requested.
-
-`ichor_neutral_cn()` describes CN observed in NEUT bins separately for autosomes,
-X and Y. Missing or conflicting evidence returns NA with diagnostic status;
-it never assumes CN 2 or borrows an autosomal baseline for X.
 
 ## Defaults you can audit
 
@@ -209,14 +254,14 @@ it never assumes CN 2 or borrows an autosomal baseline for X.
 | Full observed target coverage by default | Lower coverage requires an explicit choice; zero support always stays NA |
 | BP-weighted means for continuous values; BP modes for calls | Category ties are NA, mixtures flagged; fractional mean CN is not an integer call |
 | Manifest order, no default clustering | Optional clustering is exploratory and excludes bins not observed in every row |
-| Import-time fingerprints; paths opt-in | Reproducibility metadata, **not** de-identification or a security guarantee |
+| Identifiers shown, opt-out per plot | Aliases are your choice; hide them with `show_sample_id` / `show_row_names` |
+| Import-time fingerprints; paths opt-in | Reproducibility metadata, not de-identification or a security guarantee |
 
-These are not all literature-established rules. The
-[decision register](docs/decision-register.md) separates **upstream contracts**,
-**package policies**, and **study choices needing approval**, with implementation
-and regression links. The [installed methods](inst/methods.md) specify exact
-transformations; the [workflow vignette](vignettes/manuscript-workflow.Rmd)
-includes an auditable run-selection recipe that refuses ambiguous TF matches.
+The [decision register](docs/decision-register.md) separates upstream
+contracts, package policies and study choices needing approval. The
+[installed methods](inst/methods.md) specify the exact transformations, and
+the [workflow vignette](vignettes/manuscript-workflow.Rmd) includes an
+auditable run-selection recipe.
 
 ## Reproducibility and development
 
@@ -235,23 +280,19 @@ make test
 make check
 ```
 
-The tested implementation at `1dd2d5d` passed **203 assertions across 44 tests**
-and all five CI configurations (macOS/Windows release; Linux oldrel-1/release/devel).
-Local R CMD check had no errors/warnings and one clock-verification NOTE.
-See [validation evidence and limits](docs/downstream-validation.md).
-These checks do not establish biological validity or approve final study figures.
+The CI badge above reports the current status of `R CMD check` on five
+platforms; run `make check` locally for the same result. See
+[validation evidence and limits](docs/downstream-validation.md). Passing
+checks do not establish biological validity or approve study figures.
 
-Real inputs and figures stay outside this repository. **CN minus fitted ploidy**,
-**CN minus an observed NEUT-bin reference**, and **categorical calls** are different
-measurements, not interchangeable heatmaps. The live manuscript port has changed
-its reference since the initial review; see the [remaining integration gaps](docs/decision-register.md#live-manuscript-port-audit).
-Final reference/run selection, exclusions, thresholds and presentation still need
-reconciliation and author approval.
+Real inputs and figures stay outside this repository. Final run selection,
+exclusions, thresholds and presentation still need author approval; see the
+[remaining integration gaps](docs/decision-register.md#live-manuscript-port-audit).
 
 ## Credit and citation
 
 ichorViz is independent and unofficial; it is distributed under **GPL-3-or-later**.
 See [NOTICE.md](NOTICE.md) for attribution and upstream provenance. Cite
 [Adalsteinsson, Ha, Freeman et al. (2017)](https://doi.org/10.1038/s41467-017-00965-y)
-for ichorCNA, and record the exact ichorViz commit used. An accessible software
-release/archive and final citation metadata await author approval.
+for ichorCNA, and record the exact ichorViz commit used. A public release and
+final citation metadata await author approval.

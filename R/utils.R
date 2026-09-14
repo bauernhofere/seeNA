@@ -1,4 +1,4 @@
-`%||%` <- function(x, y) if (is.null(x) || !length(x) || all(is.na(x))) y else x
+.default_if_null <- function(x, default) if (is.null(x)) default else x
 
 .ichor_abort <- function(message, class = "ichorviz_error") {
   stop(structure(list(message = message, call = NULL),
@@ -81,9 +81,15 @@
 }
 
 #' Map ichorCNA calls to display states
+#'
+#' Maps raw `event` or `corrected_call` tokens to the four display states
+#' used by the plots: HOMD to Deep loss, HETD to Loss, NEUT to Neutral, and
+#' GAIN, AMP and HLAMP variants to Gain.
 #' @param x Character vector of raw event or corrected-call tokens.
 #' @return Factor with levels matching [ichor_state_colors()]. Missing values
-#'   remain NA; unsupported calls raise a schema error. Does not infer new calls.
+#'   remain `NA`; unsupported tokens raise a schema error.
+#' @examples
+#' ichor_call_state(c("HOMD", "HETD", "NEUT", "GAIN", "AMP", "HLAMP3", NA))
 #' @export
 ichor_call_state <- function(x) {
   x <- .normalize_call(x)

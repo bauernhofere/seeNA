@@ -9,7 +9,7 @@
    with rationale, evidence, alternatives and limitations; a passing test does
    not establish biological validity.
 6. Edit `README.Rmd`, not generated `README.md`, and run `make readme`. Inspect
-   all three regenerated fixture-only PNGs; never substitute clinical profiles.
+   all four regenerated fixture-only PNGs; never substitute clinical profiles.
 
 `make audit-reference` optionally compares the implemented primary chromosome
 lengths against public UCSC tables. It requires network access and does not

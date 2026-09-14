@@ -7,20 +7,30 @@
 ichor_adjusted_logr(x, component = c("bins", "segments"))
 }
 \arguments{
-\item{x}{An ichor_sample with finite fitted TF and ploidy.}
+\item{x}{An \code{ichor_sample} with finite fitted TF and ploidy.}
 
-\item{component}{Bins (logR) or segments (median).}
+\item{component}{\code{"bins"} (logR) or \code{"segments"} (median).}
 }
 \value{
-Numeric vector in source-table order, retaining NA. For an absent
-segment table, returns numeric(0); fitted parameters are still required.
+Numeric vector in source-table order, retaining \code{NA}. For an
+absent segment table, returns \code{numeric(0)}.
 }
 \description{
-Adds \code{log2((TF * ploidy + (1 - TF) * 2) / 2)} to source logR or segment
-medians, matching the formula in v0.4 plotGWSolution/plotCNlogRByChr. Exported
-parameters are rounded, so results need not be identical to a plot made from
-full-precision in-memory fitted parameters. This is a display transform, not
-purity correction, integer copy-number estimation or call reassignment. It
-does not guarantee that every gain/loss lies above/below zero, particularly
-on sex chromosomes or in noisy bins. Raw input values are never modified.
+Adds \code{log2((TF * ploidy + (1 - TF) * 2) / 2)} to bin log ratios or segment
+medians, matching the formula ichorCNA v0.4 uses when plotting.
+}
+\details{
+This is a display transform computed from the exported (rounded)
+parameters. It does not modify the sample, produce integer copy numbers or
+reassign calls, and it does not guarantee that every gain or loss lies
+above or below zero. See the installed methods contract for limits.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+                       file.path(root, "example-a.seg"),
+                       file.path(root, "example-a.params.txt"),
+                       genome_build = "hg38")
+ichor_adjusted_logr(a)
+ichor_adjusted_logr(a, "segments")
 }

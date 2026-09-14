@@ -22,22 +22,41 @@
 
 #' Plot one genome-wide ichorCNA profile
 #'
-#' Segment medians are grey: raw segment events must not share the corrected
-#' bin-call legend. Sex-chromosome neutrality depends on the selected run; neither
-#' a logR zero nor sex metadata determines it. See [ichor_neutral_cn()].
+#' Draws bin log ratios on a reference-length genome axis, colored by the
+#' selected call column, with segment medians drawn as grey lines.
+#'
+#' @details
+#' Segments are grey so raw segment events are not merged into the corrected
+#' bin-call legend. Missing calls are grey, not neutral. Set `ploidy_adjust`
+#' to reproduce the upstream plotting shift (see [ichor_adjusted_logr()]).
+#' See the installed methods contract for limits.
 #' @param x An `ichor_sample`.
-#' @param call_column Bin column used to color states; no implicit fallback.
-#' @param colors Named state color vector.
+#' @param call_column Bin column used to color states: `"corrected_call"` or
+#'   `"event"`. There is no fallback between the two.
+#' @param colors Named state color vector; see [ichor_state_colors()].
 #' @param point_size Bin point size.
 #' @param ploidy_adjust Apply [ichor_adjusted_logr()] to bins and segments?
-#'   Default FALSE preserves raw output; TRUE requires TF/ploidy from this run.
+#'   Default `FALSE` keeps raw output; `TRUE` requires TF and ploidy.
+#' @param show_sample_id Show the sample identifier in the title and subtitle?
+#'   Default `TRUE`. Set `FALSE` to omit identifiers from the figure.
 #' @return A `ggplot` object with an `ichor_transform` metadata attribute.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(
+#'   file.path(root, "example-a.cna.seg"),
+#'   file.path(root, "example-a.seg"),
+#'   file.path(root, "example-a.params.txt"),
+#'   genome_build = "hg38"
+#' )
+#' plot_ichor_profile(a)
+#' plot_ichor_profile(a, ploidy_adjust = TRUE, show_sample_id = FALSE)
 #' @export
 plot_ichor_profile <- function(x, call_column = "corrected_call",
                                colors = ichor_state_colors(), point_size = 0.35,
-                               ploidy_adjust = FALSE) {
+                               ploidy_adjust = FALSE, show_sample_id = TRUE) {
   validate_ichor_sample(x)
   .flag(ploidy_adjust, "ploidy_adjust")
+  .flag(show_sample_id, "show_sample_id")
   .check_colors(colors, names(ichor_state_colors()))
   if (!any(is.finite(x$bins$logR))) .ichor_abort("No finite logR values to plot.")
   layout <- ichor_genome_layout(x$genome_build,
@@ -63,7 +82,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
                                 limits = c(0, max(layout$boundary)),
                                 expand = ggplot2::expansion(mult = c(0.002, 0.002))) +
     ggplot2::labs(y = if (ploidy_adjust) "Ploidy-adjusted log2 ratio" else "Raw log2 ratio", color = "Copy-number state",
-                  title = x$sample_id,
+                  title = if (show_sample_id) x$sample_id else NULL,
                   subtitle = paste(x$genome_build, call_column, .tf_label(x), sep = " | ")) +
     .theme_ichor()
   if (!is.null(seg) && nrow(seg)) {
@@ -135,22 +154,36 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
 
 #' Compare two or more ichorCNA profiles
 #'
-#' Overlays original bins and segments in shared coordinates, without rebinning.
-#' One color per sample supports
-#' paired fluids, longitudinal samples, technical replicates, and arbitrary
-#' genomic regions.
+#' Overlays the original bins and segment medians of several samples in shared
+#' genomic coordinates, one color per sample, genome-wide or within a region.
 #'
-#' @param samples An `ichor_sample` or list of samples.
+#' @details
+#' Bins are never rebinned or re-centered; only segment endpoints are clipped
+#' in region views. Which samples belong together comes from your study
+#' design, not from filenames. See the installed methods contract for limits.
+#' @param samples An `ichor_sample` or list of samples with unique identifiers
+#'   and the same genome build.
 #' @param region Optional `chr:start-end` region. The default is genome-wide.
 #' @param colors Optional named vector of sample colors.
 #' @param point_size Bin point size.
+#' @param show_sample_id Show sample identifiers in the legend and subtitle?
+#'   Default `TRUE`. Set `FALSE` to hide the legend and name-bearing subtitle.
 #' @inheritParams plot_ichor_profile
 #' @return A `ggplot` object with an `ichor_transform` metadata attribute.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+#'                        file.path(root, "example-a.seg"), genome_build = "hg38")
+#' b <- read_ichor_sample(file.path(root, "example-b.cna.seg"),
+#'                        file.path(root, "example-b.seg"), genome_build = "hg38")
+#' plot_ichor_compare(list(a, b))
+#' plot_ichor_compare(list(a, b), colors = c("example-a" = "#007A87", "example-b" = "#B34E18"))
 #' @export
 plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size = 0.4,
-                               ploidy_adjust = FALSE) {
+                               ploidy_adjust = FALSE, show_sample_id = TRUE) {
   samples <- .as_sample_list(samples)
   .flag(ploidy_adjust, "ploidy_adjust")
+  .flag(show_sample_id, "show_sample_id")
   d <- .comparison_data(samples, region, ploidy_adjust)
   if (!nrow(d$bins)) .ichor_abort("No bins overlap the requested region.", "ichorviz_region_error")
   if (is.null(colors)) colors <- stats::setNames(.default_sample_colors(length(samples)), names(samples))
@@ -162,9 +195,11 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
   p <- ggplot2::ggplot(d$bins, ggplot2::aes(x = x, y = logR, color = sample)) +
     ggplot2::geom_hline(yintercept = 0, color = "grey60", linewidth = 0.35) +
     ggplot2::geom_point(size = point_size, alpha = 0.65, na.rm = TRUE) +
-    ggplot2::scale_color_manual(values = colors[names(samples)]) +
+    ggplot2::scale_color_manual(values = colors[names(samples)], guide = if (show_sample_id) "legend" else "none") +
     ggplot2::labs(y = if (ploidy_adjust) "Ploidy-adjusted log2 ratio" else "Raw log2 ratio", color = NULL,
-                  subtitle = paste(d$build, paste(paste(names(samples), vapply(samples, .tf_label, character(1))), collapse = " | "), sep = " | ")) +
+                  subtitle = if (show_sample_id) {
+                    paste(d$build, paste(paste(names(samples), vapply(samples, .tf_label, character(1))), collapse = " | "), sep = " | ")
+                  } else d$build) +
     .theme_ichor()
 
   if (!is.null(d$segments) && nrow(d$segments)) {
@@ -195,12 +230,21 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
 
 #' Plot a genomic region
 #'
+#' Zooms one or more samples into a chromosome or `chr:start-end` interval
+#' using the original bin midpoints; a thin wrapper around [plot_ichor_compare()].
+#'
 #' @inheritParams plot_ichor_compare
 #' @param region Required chromosome or `chr:start-end` interval.
-#' @return A `ggplot` object.
+#' @return A `ggplot` object with an `ichor_transform` metadata attribute.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
+#'                        file.path(root, "example-a.seg"), genome_build = "hg38")
+#' plot_ichor_region(a, "chr1:1-4000000")
+#' plot_ichor_region(a, "chrX")
 #' @export
 plot_ichor_region <- function(samples, region, colors = NULL, point_size = 0.55,
-                              ploidy_adjust = FALSE) {
+                              ploidy_adjust = FALSE, show_sample_id = TRUE) {
   plot_ichor_compare(samples, region = region, colors = colors, point_size = point_size,
-                     ploidy_adjust = ploidy_adjust)
+                     ploidy_adjust = ploidy_adjust, show_sample_id = show_sample_id)
 }

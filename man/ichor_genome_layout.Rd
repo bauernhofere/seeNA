@@ -7,15 +7,21 @@
 ichor_genome_layout(genome_build, chromosomes = c(as.character(1:22), "X"))
 }
 \arguments{
-\item{genome_build}{Explicit hg19 or hg38.}
+\item{genome_build}{Explicit \code{"hg19"} or \code{"hg38"}.}
 
 \item{chromosomes}{Chromosomes to include; default autosomes and X.
 Selected chromosomes are always ordered genomically. Include Y explicitly.}
 }
 \value{
-Data frame with chr, length, offset, mid and boundary in base pairs.
-Offsets depend on the chromosome set; reuse the same layout across samples.
+Data frame with \code{chr}, \code{length}, \code{offset}, \code{mid} and \code{boundary} in
+base pairs. Offsets depend on the chromosome set, so reuse the same
+layout across samples.
 }
 \description{
-Reference chromosome lengths and cumulative offsets
+Returns the reference lengths of the selected chromosomes and the
+cumulative offsets, midpoints and boundaries used for genome-wide axes.
+}
+\examples{
+head(ichor_genome_layout("hg38"))
+ichor_genome_layout("hg19", c("1", "X", "Y"))
 }

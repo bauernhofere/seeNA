@@ -1,3 +1,26 @@
+# ichorViz 0.0.0.9003 (development)
+
+* Added explicit-pair directional call comparison and a stacked agreement plot:
+  shared grid, independent call/logR coverage, unknown mixed/missing calls,
+  baseline-evidence flags and optional conservative sex-chromosome gating.
+* Paired plots retain both altered heights by default; the manuscript's
+  representative-height policy is an explicit option, not a difference metric.
+  Added arithmetic, rendering and vdiffr regressions plus a fixture-only example.
+* Sample identifiers are now shown by default in every plot, with an explicit
+  opt-out: `show_sample_id = FALSE` for profile, comparison and region plots and
+  `show_row_names = FALSE` for heatmaps (whose default changed from FALSE to TRUE).
+* Replaced the custom `%||%` operator, whose NA/empty semantics differed from
+  base R, with an internal NULL-only helper; empty and NA arguments are now
+  handled explicitly (an NA `sample_id` is an error).
+* Added a runnable example to every exported function and rewrote roxygen
+  descriptions to lead with what each function does; limits moved to `@details`
+  and the installed methods contract.
+* Restructured the README (install, quick start, comparison, cohort) and trimmed
+  repeated caveats in the README and vignette.
+* Removed hard-coded commit pins from the README and docs; the install snippet
+  now tracks the branch and records `RemoteSha`.
+* Added vdiffr snapshot tests for the ggplot outputs (`vdiffr` in Suggests).
+
 # ichorViz 0.0.0.9002
 
 * Added a source/evidence-linked decision register, distinguishing upstream

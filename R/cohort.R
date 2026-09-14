@@ -10,20 +10,32 @@
 
 #' Read a cohort manifest
 #'
-#' Required columns: `sample_id`, `cna_seg`; optional: `seg`, `params`.
-#' Other columns are user-supplied plot annotations, not automatically safe to
-#' share. Manifest IDs are aliases; companion source identities are still checked.
-#' Loading is atomic: any failed sample aborts the entire import.
+#' Reads every sample listed in a CSV/TSV manifest or data frame into a
+#' validated `ichor_cohort`, keeping manifest order and extra columns as
+#' sample metadata.
+#'
+#' @details
+#' Required columns: `sample_id`, `cna_seg`; optional: `seg`, `params`. Other
+#' columns become plot annotations; use `metadata_columns` to allowlist them.
+#' Manifest IDs are aliases; source identities in the files are still checked.
+#' Loading is atomic: any failed sample aborts the whole import with one
+#' message listing every failure.
 #' @param manifest CSV/TSV path or data frame.
-#' @param genome_build Explicit shared build.
+#' @param genome_build Explicit shared build, `"hg19"` or `"hg38"`.
 #' @param workers Positive integer; Unix uses fork workers, Windows sequential.
-#' @param root Required for relative paths in a data-frame manifest. File manifests
-#'   resolve paths against their own directory.
-#' @param retain_paths Retain absolute paths in sample provenance? Default FALSE.
+#' @param root Required for relative paths in a data-frame manifest. File
+#'   manifests resolve paths against their own directory.
+#' @param retain_paths Retain absolute paths in sample provenance? Default `FALSE`.
 #' @param bounds Interval bounds policy passed to [read_ichor_sample()].
-#' @param metadata_columns Optional annotation allowlist; NULL retains all
-#'   non-file columns. `character()` retains only sample_id.
-#' @return A validated `ichor_cohort` in manifest order.
+#' @param metadata_columns Optional annotation allowlist; `NULL` retains all
+#'   non-file columns, `character()` retains only `sample_id`.
+#' @return A validated `ichor_cohort` with `samples` and `metadata` in
+#'   manifest order.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+#' cohort
+#' cohort$metadata
 #' @export
 read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
                               retain_paths = FALSE, bounds = c("window", "error", "trim"),
@@ -51,9 +63,9 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
   for (nm in file_cols) tab[[nm]] <- vapply(as.character(tab[[nm]]), .resolve_manifest_path, character(1), root = root)
   available <- setdiff(names(tab), file_cols)
   if (!is.null(metadata_columns) && !all(metadata_columns %in% available)) .ichor_abort("Unknown metadata columns.")
-  metadata <- tab[unique(c("sample_id", metadata_columns %||% available))]
-  # character() is an intentional empty annotation allowlist, not a default.
-  if (identical(metadata_columns, character())) metadata <- tab["sample_id"]
+  # NULL keeps every non-file column; character() is an explicit empty allowlist.
+  keep <- if (is.null(metadata_columns)) available else metadata_columns
+  metadata <- tab[unique(c("sample_id", keep))]
   load_one <- function(i) {
     tryCatch(withCallingHandlers(list(sample = read_ichor_sample(tab$cna_seg[i],
       seg = if ("seg" %in% names(tab)) tab$seg[i] else NULL,
@@ -74,7 +86,7 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
   if (!all(ok)) {
     details <- vapply(which(!ok), function(i) {
       reason <- if (is.list(results[[i]])) results[[i]]$error else "Worker failure"
-      sprintf("row %d (%s): %s", i, tab$sample_id[i], reason %||% "Worker failure")
+      sprintf("row %d (%s): %s", i, tab$sample_id[i], .default_if_null(reason, "Worker failure"))
     }, character(1))
     .ichor_abort(paste("Cohort import aborted:", paste(details, collapse = "; ")), "ichorviz_manifest_error")
   }
@@ -89,8 +101,15 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
 }
 
 #' Validate a cohort
+#'
+#' Checks that every sample validates, identifiers are unique, metadata rows
+#' match sample order and all samples share the cohort genome build.
 #' @param x An `ichor_cohort`.
 #' @return `x`, invisibly.
+#' @examples
+#' root <- system.file("extdata", package = "ichorViz")
+#' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+#' validate_ichor_cohort(cohort)
 #' @export
 validate_ichor_cohort <- function(x) {
   if (!inherits(x, "ichor_cohort") || !identical(x$schema_version, 1L) ||

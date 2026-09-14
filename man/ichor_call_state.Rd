@@ -11,8 +11,13 @@ ichor_call_state(x)
 }
 \value{
 Factor with levels matching \code{\link[=ichor_state_colors]{ichor_state_colors()}}. Missing values
-remain NA; unsupported calls raise a schema error. Does not infer new calls.
+remain \code{NA}; unsupported tokens raise a schema error.
 }
 \description{
-Map ichorCNA calls to display states
+Maps raw \code{event} or \code{corrected_call} tokens to the four display states
+used by the plots: HOMD to Deep loss, HETD to Loss, NEUT to Neutral, and
+GAIN, AMP and HLAMP variants to Gain.
+}
+\examples{
+ichor_call_state(c("HOMD", "HETD", "NEUT", "GAIN", "AMP", "HLAMP3", NA))
 }

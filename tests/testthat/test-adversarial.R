@@ -19,6 +19,9 @@ test_that("source identity cannot be overridden by an alias", {
   expect_null(a$segments$sample_id)
   expect_null(attr(a$bins, "source_id"))
   expect_false("path" %in% names(ichor_provenance(a)))
+  # NULL alone means "use the source ID"; an NA alias is an explicit error.
+  expect_error(read_ichor_sample(fixture_path("example-a.cna.seg"), genome_build = "hg38",
+    sample_id = NA_character_), "non-empty character scalar")
 })
 
 test_that("all interval layers and measurements are validated", {
@@ -217,7 +220,8 @@ test_that("heatmap drawing succeeds and ordering and missingness are deliberate"
   p <- tempfile(fileext = ".pdf")
   grDevices::pdf(p)
   tryCatch({
-    h <- plot_ichor_heatmap(m, annotation_columns = "condition", row_order = rev(m$samples$sample_id))
+    h <- plot_ichor_heatmap(m, annotation_columns = "condition", row_order = rev(m$samples$sample_id),
+                            show_row_names = FALSE)
     h <- ComplexHeatmap::draw(h)
     expect_equal(ComplexHeatmap::row_order(h), 2:1)
     m$values[2, ] <- NA_real_

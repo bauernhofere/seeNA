@@ -13,5 +13,12 @@ validate_ichor_sample(x)
 \code{x}, invisibly; invalid objects raise classed errors.
 }
 \description{
-Validate an ichorCNA sample
+Checks an \code{ichor_sample} for schema version, chromosome names, sorted
+non-overlapping in-build intervals, numeric measurements and parameter
+ranges.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
+validate_ichor_sample(a)
 }

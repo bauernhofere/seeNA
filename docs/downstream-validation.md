@@ -54,7 +54,8 @@ The prior remote run was not green despite local success:
 
 Subsequently confirmed: both [PR](https://github.com/bauernhofere/ichorViz/actions/runs/34724852864)
 and [push](https://github.com/bauernhofere/ichorViz/actions/runs/34724851027) runs
-for `1dd2d5d` succeeded on all five configurations. This does not approve the
+for that development commit succeeded on all five configurations; the CI badge
+in the README reports the current branch. This does not approve the
 manuscript workflow.
 
 ## Local evidence

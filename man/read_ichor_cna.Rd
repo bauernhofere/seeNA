@@ -15,7 +15,18 @@ read_ichor_cna(path, sample_id = NULL)
 Normalized data frame with \code{sample_id} and \code{source_id} attributes.
 }
 \description{
-Accepts one sample per file. Mixed sample prefixes and duplicate semantic
-columns are errors. Missing scientific values remain NA; malformed values
-are errors. Coordinates are 1-based closed intervals.
+Reads one sample's \code{.cna.seg} file and returns a normalized data frame with
+\code{chr}, \code{start}, \code{end}, \code{logR} and any optional call and copy-number columns.
+}
+\details{
+Sample-prefixed column names such as \code{sample.logR} are stripped; files with
+several sample prefixes are rejected. Missing values stay \code{NA}; malformed
+values and ambiguous columns raise a classed schema error. Coordinates are
+1-based closed intervals.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+bins <- read_ichor_cna(file.path(root, "example-a.cna.seg"))
+head(bins)
+attr(bins, "sample_id")
 }

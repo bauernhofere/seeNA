@@ -8,7 +8,7 @@ plot_ichor_heatmap(
   x,
   annotation_columns = NULL,
   cluster_rows = FALSE,
-  show_row_names = FALSE,
+  show_row_names = TRUE,
   colors = NULL,
   annotation_colors = NULL,
   row_order = NULL,
@@ -20,9 +20,10 @@ plot_ichor_heatmap(
 
 \item{annotation_columns}{Metadata columns to show as row annotations.}
 
-\item{cluster_rows}{Explicitly cluster samples? Default FALSE.}
+\item{cluster_rows}{Explicitly cluster samples? Default \code{FALSE}.}
 
-\item{show_row_names}{Display sample aliases? Default FALSE.}
+\item{show_row_names}{Display sample identifiers? Default \code{TRUE}; set
+\code{FALSE} to omit them from the figure.}
 
 \item{colors}{Custom continuous color function or named discrete call colors.}
 
@@ -38,13 +39,26 @@ An undrawn \code{ComplexHeatmap::Heatmap} object. Use
 \code{ComplexHeatmap::draw()} to render it on the caller's device.
 }
 \description{
-Default row order is manifest order. Optional clustering uses Euclidean
-distances and complete linkage on columns observed in every sample (at least
-two required), without imputation. Calls use discrete colors; continuous
-default scales include the observed range. CN 2 is a visual reference, not a
-neutrality call; sex-chromosome baseline and fitted ploidy may differ.
-Euclidean clustering on call codes additionally assumes ordinal spacing of
--2/-1/0/1; it is exploratory, not a validated biological similarity metric.
-Consider a justified continuous measurement or an externally supplied row
-order instead. Common-bin selection can be biased by systematic filtering.
+Builds an annotated \code{ComplexHeatmap::Heatmap} from an \code{\link[=ichor_matrix]{ichor_matrix()}}, one
+row per sample and one column per genomic bin, split by chromosome.
+}
+\details{
+Rows keep manifest order unless you cluster or pass \code{row_order}. Optional
+clustering uses Euclidean distance and complete linkage on bins observed in
+every sample, with no imputation; on call codes it assumes ordinal spacing
+and is exploratory only. Missing, tied and under-covered cells use \code{na_col};
+inspect the matrix \code{coverage} and \code{mixed} layers to tell them apart. CN 2 is
+a reference color, not a neutrality call. See the installed methods
+contract for limits.
+}
+\examples{
+if (requireNamespace("ComplexHeatmap", quietly = TRUE) &&
+    requireNamespace("circlize", quietly = TRUE)) {
+  root <- system.file("extdata", package = "ichorViz")
+  cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
+  m <- ichor_matrix(cohort, value = "call", chromosomes = c("1", "2"))
+  h <- plot_ichor_heatmap(m, annotation_columns = "condition")
+  class(h)
+  # ComplexHeatmap::draw(h) renders it on the current device.
+}
 }

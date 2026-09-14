@@ -10,9 +10,14 @@ read_ichor_segments(path)
 \item{path}{Path to a segment file.}
 }
 \value{
-A data frame with normalized segment columns.
+A data frame with normalized segment columns and a \code{source_id}
+attribute.
 }
 \description{
-Supports v0.4 \code{.seg} and its separate \code{.seg.txt} export. The latter uses
-\code{chrom}, \code{num.mark}, and \code{seg.median.logR} headers.
+Reads a \code{.seg} file, or the separate \code{.seg.txt} export with \code{chrom},
+\code{num.mark} and \code{seg.median.logR} headers, into a normalized data frame.
+}
+\examples{
+root <- system.file("extdata", package = "ichorViz")
+read_ichor_segments(file.path(root, "example-a.seg"))
 }
