@@ -465,6 +465,12 @@ separate legends. Fitted TF/ploidy remain visible; identifiers can be hidden, bu
 plot data/attributes are not anonymized. Raw logR remains default; optional
 ploidy adjustment applies the same run-specific shift to bins, segments and track
 heights. `ylim=c(-2,2)` clips the view only and warns for out-of-range heights.
+Relative panel `heights`, `segment_linewidth` and `point_stroke` are presentation
+controls recorded in `ichor_view`; they do not change measurements or limits.
+Defaults retain equal panels, segment width 0.55 and inherited point stroke.
+Native ggplot2 >= 4.0.0 panel sizing keeps the result themeable without a new
+plot-composition dependency. A custom-style snapshot and numeric layout/data
+invariance tests cover these controls.
 
 **Evidence:** [plot-concordance.R](../R/plot-concordance.R), numeric/device tests in
 [test-concordance.R](../tests/testthat/test-concordance.R), and new vdiffr cases in

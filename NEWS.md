@@ -1,5 +1,8 @@
 # ichorViz 0.0.0.9003 (development)
 
+* Added concordance plot styling controls: relative panel `heights`,
+  `segment_linewidth` and `point_stroke`, preserving the existing defaults.
+  Native panel sizing requires ggplot2 >= 4.0.0; the result remains a ggplot.
 * Added explicit-pair directional call comparison and a stacked agreement plot:
   shared grid, independent call/logR coverage, unknown mixed/missing calls,
   baseline-evidence flags and optional conservative sex-chromosome gating.

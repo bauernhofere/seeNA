@@ -146,6 +146,19 @@ uses the manuscript's mean/largest-absolute-height rule (ties choose A). Neither
 height rule reassigns calls based on logR sign. `ylim` is shared by both panels;
 out-of-view heights warn instead of silently changing the input.
 
+Adjust panel proportions and mark widths without changing the measurements:
+
+
+``` r
+plot_ichor_concordance(
+  a, b, ploidy_adjust = TRUE,
+  heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0
+) + ggplot2::theme(legend.position = "bottom")
+```
+
+`heights` orders the profile and agreement panels; singular `height` selects the
+bar-value policy. Styling keeps the same calls, coordinates and y limits.
+
 
 ``` r
 agreement <- ichor_pair_concordance(a, b, chromosomes = "1")

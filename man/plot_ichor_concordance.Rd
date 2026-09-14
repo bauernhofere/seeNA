@@ -21,7 +21,10 @@ plot_ichor_concordance(
   sample_colors = c(a = "#007A87", b = "#B34E18"),
   colors = .concordance_colors(),
   point_size = 0.4,
-  show_sample_id = TRUE
+  show_sample_id = TRUE,
+  heights = c(1, 1),
+  segment_linewidth = 0.55,
+  point_stroke = NULL
 )
 }
 \arguments{
@@ -63,6 +66,14 @@ discordant, unavailable and baseline_flag.}
 \item{show_sample_id}{Include source aliases in the subtitle? Default TRUE.
 FALSE keeps generic/display names and fitted parameters. Plot data and
 attributes still contain source identifiers; this is not de-identification.}
+
+\item{heights}{Two positive relative panel heights, profiles then agreement
+track. Default c(1,1). Unlike \code{height}, this changes layout, not bar values.}
+
+\item{segment_linewidth}{Upper-panel segment line width; default 0.55.}
+
+\item{point_stroke}{Upper-panel point stroke width; default NULL inherits
+ggplot/theme styling. Set 0 for borderless points. Does not change zero-height markers.}
 }
 \value{
 Faceted ggplot object. Attributes \code{ichor_concordance} (displayed-bin
@@ -92,4 +103,6 @@ root <- system.file("extdata", package = "ichorViz")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 plot_ichor_concordance(a, b, region = "chr1:1-5000000", show_sample_id = FALSE)
+plot_ichor_concordance(a, b, region = "chr1:1-5000000",
+  heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0)
 }

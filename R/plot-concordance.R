@@ -32,6 +32,11 @@
 #' @param colors Named agreement palette including a_only, b_only, concordant,
 #'   discordant, unavailable and baseline_flag.
 #' @param point_size Upper-panel bin point size.
+#' @param heights Two positive relative panel heights, profiles then agreement
+#'   track. Default c(1,1). Unlike `height`, this changes layout, not bar values.
+#' @param segment_linewidth Upper-panel segment line width; default 0.55.
+#' @param point_stroke Upper-panel point stroke width; default NULL inherits
+#'   ggplot/theme styling. Set 0 for borderless points. Does not change zero-height markers.
 #' @param show_sample_id Include source aliases in the subtitle? Default TRUE.
 #'   FALSE keeps generic/display names and fitted parameters. Plot data and
 #'   attributes still contain source identifiers; this is not de-identification.
@@ -42,6 +47,8 @@
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 #' b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 #' plot_ichor_concordance(a, b, region = "chr1:1-5000000", show_sample_id = FALSE)
+#' plot_ichor_concordance(a, b, region = "chr1:1-5000000",
+#'   heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0)
 #' @export
 plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
     call_column = c("corrected_call", "event"), min_coverage = 1,
@@ -49,12 +56,18 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
     sex_chromosomes = c("flag", "require_neutral"), max_cells = 5e7,
     height = c("both", "representative"), ylim = c(-2, 2),
     sample_labels = c("A", "B"), sample_colors = c(a = "#007A87", b = "#B34E18"),
-    colors = .concordance_colors(), point_size = 0.4, show_sample_id = TRUE) {
+    colors = .concordance_colors(), point_size = 0.4, show_sample_id = TRUE,
+    heights = c(1, 1), segment_linewidth = 0.55, point_stroke = NULL) {
   height <- match.arg(height)
   call_column <- match.arg(call_column)
   sex_chromosomes <- match.arg(sex_chromosomes)
   .flag(show_sample_id, "show_sample_id")
   .scalar(point_size, "point_size", lower = 0)
+  .scalar(segment_linewidth, "segment_linewidth", lower = 0)
+  if (!is.null(point_stroke)) .scalar(point_stroke, "point_stroke", lower = 0)
+  if (!is.numeric(heights) || length(heights) != 2L || any(!is.finite(heights)) || any(heights <= 0)) {
+    .ichor_abort("heights must contain two finite positive relative panel heights.")
+  }
   if (!is.numeric(ylim) || length(ylim) != 2L || any(!is.finite(ylim)) || ylim[1] >= 0 || ylim[2] <= 0) {
     .ichor_abort("ylim must be finite, increasing and straddle zero.")
   }
@@ -142,8 +155,10 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
     ggplot2::geom_rect(data = unavailable, ggplot2::aes(xmin = xleft, xmax = xright,
       ymin = ymin, ymax = ymax, fill = category), alpha = 0.6) +
     ggplot2::geom_hline(yintercept = 0, color = "grey65", linewidth = 0.3) +
-    ggplot2::geom_point(data = profile, ggplot2::aes(x = x, y = value, color = sample),
-      size = point_size, alpha = 0.7, na.rm = TRUE) +
+    do.call(ggplot2::geom_point, c(list(data = profile,
+      mapping = ggplot2::aes(x = x, y = value, color = sample),
+      size = point_size, alpha = 0.7, na.rm = TRUE),
+      if (!is.null(point_stroke)) list(stroke = point_stroke))) +
     ggplot2::geom_rect(data = bars, ggplot2::aes(xmin = xleft, xmax = xright,
       ymin = pmin(0, value), ymax = pmax(0, value), fill = category)) +
     ggplot2::geom_rect(data = flags, ggplot2::aes(xmin = xleft, xmax = xright,
@@ -160,9 +175,10 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
       y = if (ploidy_adjust) "Ploidy-adjusted log2 ratio" else "Raw log2 ratio",
       caption = if (height == "both") paste("Track: within each target bin,", sample_labels[1],
         "left /", sample_labels[2], "right. Both neutral hidden; not a numerical difference.") else
-        "Representative height: one-sided / mean / largest absolute (ties A). Not a numerical difference.") + .theme_ichor()
+        "Representative height: one-sided / mean / largest absolute (ties A). Not a numerical difference.") +
+    .theme_ichor() + ggplot2::theme(panel.heights = grid::unit(heights, "null"))
   if (!is.null(segments)) p <- p + ggplot2::geom_segment(data = segments,
-    ggplot2::aes(x = x, xend = xend, y = value, yend = value, color = sample), linewidth = 0.55, na.rm = TRUE)
+    ggplot2::aes(x = x, xend = xend, y = value, yend = value, color = sample), linewidth = segment_linewidth, na.rm = TRUE)
   if (is.null(r)) {
     p <- p + ggplot2::geom_vline(xintercept = utils::head(layout$boundary, -1) / 1e6,
       color = "grey85", linewidth = 0.2) +
@@ -176,6 +192,7 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
   if (clipped) warning("Plotted heights exceed ylim; the view is clipped, not the input data.", call. = FALSE)
   attr(p, "ichor_concordance") <- d
   attr(p, "ichor_transform") <- settings
-  attr(p, "ichor_view") <- list(region = r, ylim = ylim, height = height, clipped_heights = clipped)
+  attr(p, "ichor_view") <- list(region = r, ylim = ylim, height = height, clipped_heights = clipped,
+    heights = heights, segment_linewidth = segment_linewidth, point_stroke = point_stroke)
   p
 }
