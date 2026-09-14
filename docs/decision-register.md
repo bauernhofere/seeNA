@@ -465,12 +465,20 @@ separate legends. Fitted TF/ploidy remain visible; identifiers can be hidden, bu
 plot data/attributes are not anonymized. Raw logR remains default; optional
 ploidy adjustment applies the same run-specific shift to bins, segments and track
 heights. `ylim=c(-2,2)` clips the view only and warns for out-of-range heights.
-Relative panel `heights`, `segment_linewidth` and `point_stroke` are presentation
+Relative `panel_heights`, `segment_linewidth` and `point_stroke` are presentation
 controls recorded in `ichor_view`; they do not change measurements or limits.
 Defaults retain equal panels, segment width 0.55 and inherited point stroke.
-Native ggplot2 >= 4.0.0 panel sizing keeps the result themeable without a new
-plot-composition dependency. A custom-style snapshot and numeric layout/data
-invariance tests cover these controls.
+The package supports ggplot2 >= 3.5.0. Unequal proportions use native ggplot2
+>= 4.0.0 panel sizing; on older versions the request errors rather than silently
+losing the requested layout. Equal panels and all other styling remain supported.
+This avoids a package-wide 4.0 requirement and preserves a themeable ggplot without
+a composition dependency. A custom-style snapshot and numeric layout/data
+invariance tests cover these controls. One-sided default track colors follow
+`sample_colors`; an explicit agreement palette takes precedence.
+
+The existing linear joint-coverage sweep is retained. Fine-bin profiling should
+precede an optimization; any replacement must retain interval/NA semantics and
+avoid unexpectedly large overlap joins. No fine-grid speed improvement is claimed.
 
 **Evidence:** [plot-concordance.R](../R/plot-concordance.R), numeric/device tests in
 [test-concordance.R](../tests/testthat/test-concordance.R), and new vdiffr cases in

@@ -10,7 +10,7 @@ output: github_document
 
 **From ichorCNA output files to comparable, auditable figures in R.**
 
-[![R-CMD-check](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml/badge.svg?branch=fix%2Fscientific-contracts)](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml?query=branch%3Afix%2Fscientific-contracts)
+[![R-CMD-check](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml?query=branch%3Amain)
 
 ichorViz reads existing [ichorCNA](https://github.com/GavinHaLab/ichorCNA)
 results and turns them into plots: single genome-wide profiles, overlays of
@@ -27,8 +27,8 @@ stay with the plots.
 | **Cohort** | Coverage-aware matrices and annotated ComplexHeatmap objects |
 | **Your style** | Ordinary ggplot objects, named palettes and public transformation helpers |
 
-> **Private development version.** This is the draft hardening branch, not a
-> public release; see the [decision register](docs/decision-register.md) for
+> **Private development version.** This is not a public software release;
+> see the [decision register](docs/decision-register.md) for
 > rationale and open approval gates.
 
 ## Install
@@ -37,7 +37,7 @@ stay with the plots.
 ``` r
 # install.packages("remotes")
 # Requires private-repository access.
-remotes::install_github("bauernhofere/ichorViz", ref = "fix/scientific-contracts")
+remotes::install_github("bauernhofere/ichorViz", ref = "main")
 # Record the exact commit you installed alongside your results:
 packageDescription("ichorViz")$RemoteSha
 
@@ -133,7 +133,7 @@ unknown. This is **call agreement**, not the numerical difference between fluids
 
 ``` r
 plot_ichor_concordance(
-  a, b, region = "chr1:1-5000000", ploidy_adjust = TRUE,
+  a, b, region = "chr1:1-5000000", ploidy_adjust = TRUE, ylim = c(-1, 1),
   sample_labels = c("A", "B"), point_size = 2, show_sample_id = FALSE
 ) + ggplot2::labs(title = "Paired agreement | test fixtures only")
 ```
@@ -152,12 +152,17 @@ Adjust panel proportions and mark widths without changing the measurements:
 ``` r
 plot_ichor_concordance(
   a, b, ploidy_adjust = TRUE,
-  heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0
+  panel_heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0
 ) + ggplot2::theme(legend.position = "bottom")
 ```
 
-`heights` orders the profile and agreement panels; singular `height` selects the
-bar-value policy. Styling keeps the same calls, coordinates and y limits.
+`panel_heights` orders the profile and agreement panels; `height` selects the
+bar-value policy. Unequal panel proportions require ggplot2 >= 4.0.0; ggplot2 3.5
+supports equal panels and all other options. Unsupported proportions fail clearly,
+rather than silently changing the layout. Styling keeps the same measurements.
+One-sided track colors follow `sample_colors` unless you supply an explicit
+agreement `colors` palette. The tighter y limits above are for the sparse demo;
+the function default remains -2 to 2.
 
 
 ``` r

@@ -1,4 +1,6 @@
-.concordance_colors <- function() c(a_only = "#007A87", b_only = "#B34E18",
+.supports_panel_heights <- function() utils::packageVersion("ggplot2") >= "4.0.0"
+
+.concordance_colors <- function(sample_colors) c(a_only = unname(sample_colors["a"]), b_only = unname(sample_colors["b"]),
   concordant = "#35864C", discordant = "#9254A1", unavailable = "#D9D9D9",
   baseline_flag = "#D9AB38")
 
@@ -29,11 +31,13 @@
 #' @param sample_labels Two distinct display names for a,b. Default A,B; pairing
 #'   and fluid identities are never inferred. Use e.g. c("Plasma", "Urine").
 #' @param sample_colors Two named colors keyed by a,b.
-#' @param colors Named agreement palette including a_only, b_only, concordant,
-#'   discordant, unavailable and baseline_flag.
+#' @param colors Optional named agreement palette including a_only, b_only,
+#'   concordant, discordant, unavailable and baseline_flag. NULL derives the
+#'   one-sided colors from sample_colors; an explicit palette takes precedence.
 #' @param point_size Upper-panel bin point size.
-#' @param heights Two positive relative panel heights, profiles then agreement
-#'   track. Default c(1,1). Unlike `height`, this changes layout, not bar values.
+#' @param panel_heights Two positive relative panel heights, profiles then
+#'   agreement track. Default c(1,1). Unequal proportions require ggplot2 >= 4.0.0;
+#'   on older versions they raise an error rather than being silently ignored.
 #' @param segment_linewidth Upper-panel segment line width; default 0.55.
 #' @param point_stroke Upper-panel point stroke width; default NULL inherits
 #'   ggplot/theme styling. Set 0 for borderless points. Does not change zero-height markers.
@@ -48,7 +52,7 @@
 #' b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 #' plot_ichor_concordance(a, b, region = "chr1:1-5000000", show_sample_id = FALSE)
 #' plot_ichor_concordance(a, b, region = "chr1:1-5000000",
-#'   heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0)
+#'   panel_heights = c(1, 1), segment_linewidth = 0.32, point_stroke = 0)
 #' @export
 plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
     call_column = c("corrected_call", "event"), min_coverage = 1,
@@ -56,8 +60,8 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
     sex_chromosomes = c("flag", "require_neutral"), max_cells = 5e7,
     height = c("both", "representative"), ylim = c(-2, 2),
     sample_labels = c("A", "B"), sample_colors = c(a = "#007A87", b = "#B34E18"),
-    colors = .concordance_colors(), point_size = 0.4, show_sample_id = TRUE,
-    heights = c(1, 1), segment_linewidth = 0.55, point_stroke = NULL) {
+    colors = NULL, point_size = 0.4, show_sample_id = TRUE,
+    panel_heights = c(1, 1), segment_linewidth = 0.55, point_stroke = NULL) {
   height <- match.arg(height)
   call_column <- match.arg(call_column)
   sex_chromosomes <- match.arg(sex_chromosomes)
@@ -65,8 +69,12 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
   .scalar(point_size, "point_size", lower = 0)
   .scalar(segment_linewidth, "segment_linewidth", lower = 0)
   if (!is.null(point_stroke)) .scalar(point_stroke, "point_stroke", lower = 0)
-  if (!is.numeric(heights) || length(heights) != 2L || any(!is.finite(heights)) || any(heights <= 0)) {
-    .ichor_abort("heights must contain two finite positive relative panel heights.")
+  if (!is.numeric(panel_heights) || length(panel_heights) != 2L || any(!is.finite(panel_heights)) || any(panel_heights <= 0)) {
+    .ichor_abort("panel_heights must contain two finite positive relative panel heights.")
+  }
+  supports_panel_heights <- .supports_panel_heights()
+  if (!supports_panel_heights && panel_heights[1] != panel_heights[2]) {
+    .ichor_abort("Unequal panel_heights require ggplot2 >= 4.0.0; upgrade ggplot2 or request equal panel heights.")
   }
   if (!is.numeric(ylim) || length(ylim) != 2L || any(!is.finite(ylim)) || ylim[1] >= 0 || ylim[2] <= 0) {
     .ichor_abort("ylim must be finite, increasing and straddle zero.")
@@ -74,7 +82,9 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
   if (!is.character(sample_labels) || length(sample_labels) != 2L || anyNA(sample_labels) ||
       any(!nzchar(trimws(sample_labels))) || anyDuplicated(sample_labels)) .ichor_abort("Provide two distinct sample_labels.")
   .check_colors(sample_colors, c("a", "b"))
-  .check_colors(colors, names(.concordance_colors()))
+  defaults <- .concordance_colors(sample_colors)
+  if (is.null(colors)) colors <- defaults
+  .check_colors(colors, names(defaults))
   d <- ichor_pair_concordance(a, b, bin_size, call_column, min_coverage,
     chromosomes, ploidy_adjust, sex_chromosomes, max_cells)
   settings <- attr(d, "settings")
@@ -176,7 +186,8 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
       caption = if (height == "both") paste("Track: within each target bin,", sample_labels[1],
         "left /", sample_labels[2], "right. Both neutral hidden; not a numerical difference.") else
         "Representative height: one-sided / mean / largest absolute (ties A). Not a numerical difference.") +
-    .theme_ichor() + ggplot2::theme(panel.heights = grid::unit(heights, "null"))
+    .theme_ichor()
+  if (supports_panel_heights) p <- p + ggplot2::theme(panel.heights = grid::unit(panel_heights, "null"))
   if (!is.null(segments)) p <- p + ggplot2::geom_segment(data = segments,
     ggplot2::aes(x = x, xend = xend, y = value, yend = value, color = sample), linewidth = segment_linewidth, na.rm = TRUE)
   if (is.null(r)) {
@@ -193,6 +204,6 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
   attr(p, "ichor_concordance") <- d
   attr(p, "ichor_transform") <- settings
   attr(p, "ichor_view") <- list(region = r, ylim = ylim, height = height, clipped_heights = clipped,
-    heights = heights, segment_linewidth = segment_linewidth, point_stroke = point_stroke)
+    panel_heights = panel_heights, segment_linewidth = segment_linewidth, point_stroke = point_stroke)
   p
 }

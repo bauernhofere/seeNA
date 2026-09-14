@@ -184,9 +184,13 @@ mixing. Both panels share fixed y limits (default -2,2) and the selected raw or
 upstream-adjusted scale. Out-of-view values warn; source values are retained.
 Regions crop the display after aggregation, with original upper-bin midpoints.
 Data/settings/provenance and view settings are attached to the ggplot object.
-Relative panel `heights` (profiles, agreement), `segment_linewidth` and
+Relative `panel_heights` (profiles, agreement), `segment_linewidth` and
 `point_stroke` only control layout/marks and are recorded in `ichor_view`.
 Defaults preserve equal panels, width 0.55 and inherited ggplot point stroke.
+Unequal panel proportions require ggplot2 >= 4.0.0; older supported versions error
+on those requests, rather than ignore them. Equal panels work on ggplot2 3.5.
+Default one-sided track colors follow the sample palette; an explicit agreement
+palette overrides that derivation.
 These are display policies, not validated biological agreement statistics; see
 D19–D20 in the repository decision register.
 

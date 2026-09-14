@@ -16,6 +16,16 @@ test_that("comparison validates sample colors and regions", {
   expect_error(plot_ichor_region(a, "chr8:1-4000000"), "No bins overlap")
 })
 
+test_that("all profile plotting paths validate point size consistently", {
+  a <- example_sample("a")
+  for (bad in list(-1, NA_real_, Inf, c(0, 1), "small")) {
+    expect_error(plot_ichor_profile(a, point_size = bad), "point_size")
+    expect_error(plot_ichor_compare(a, point_size = bad), "point_size")
+    expect_error(plot_ichor_region(a, "chr1", point_size = bad), "point_size")
+  }
+  expect_s3_class(plot_ichor_profile(a, point_size = 0), "ggplot")
+})
+
 test_that("sample identifiers are shown by default and can be hidden", {
   a <- example_sample("a")
   b <- example_sample("b")

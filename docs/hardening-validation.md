@@ -7,7 +7,8 @@ new evidence, and the diagnosis of CI failures not seen in this local run.
 
 ## Automated evidence
 
-- 35 test cases, 145 passing assertions, no failures/errors in the local run.
+- Scientific-contract regression tests passed without failures/errors. Coverage
+  is described below; per-run test totals belong in the test/CI output.
 - `make check`: 0 errors, 0 warnings; one environment-only NOTE:
   `unable to verify current time`.
 - Examples execute in R CMD check. Methods and upstream notice ship in `inst/`.

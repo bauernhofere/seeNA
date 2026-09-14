@@ -55,6 +55,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
                                colors = ichor_state_colors(), point_size = 0.35,
                                ploidy_adjust = FALSE, show_sample_id = TRUE) {
   validate_ichor_sample(x)
+  .scalar(point_size, "point_size", lower = 0)
   .flag(ploidy_adjust, "ploidy_adjust")
   .flag(show_sample_id, "show_sample_id")
   .check_colors(colors, names(ichor_state_colors()))
@@ -182,6 +183,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
 plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size = 0.4,
                                ploidy_adjust = FALSE, show_sample_id = TRUE) {
   samples <- .as_sample_list(samples)
+  .scalar(point_size, "point_size", lower = 0)
   .flag(ploidy_adjust, "ploidy_adjust")
   .flag(show_sample_id, "show_sample_id")
   d <- .comparison_data(samples, region, ploidy_adjust)

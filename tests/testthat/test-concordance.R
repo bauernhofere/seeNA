@@ -145,10 +145,11 @@ test_that("zero altered heights have a marker rather than disappearing as neutra
 })
 
 test_that("concordance styling changes layout and marks, not measurements", {
+  skip_if_not(.supports_panel_heights(), "Unequal panel sizes require ggplot2 4")
   a <- example_sample("a"); b <- example_sample("b")
   original <- plot_ichor_concordance(a, b, region = "chr1:1-5000000")
   styled <- plot_ichor_concordance(a, b, region = "chr1:1-5000000",
-    heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0)
+    panel_heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0)
   expect_identical(attr(styled, "ichor_concordance"), attr(original, "ichor_concordance"))
   expect_identical(attr(styled, "ichor_transform"), attr(original, "ichor_transform"))
   expect_equal(styled$layers[[3]]$aes_params$stroke, 0)
@@ -158,19 +159,42 @@ test_that("concordance styling changes layout and marks, not measurements", {
   g <- ggplot2::ggplotGrob(styled + ggplot2::theme(legend.position = "bottom"))
   rows <- sort(unique(g$layout$t[grepl("^panel", g$layout$name)]))
   expect_equal(as.numeric(g$heights[rows]), c(2, 1.1))
-  expect_equal(attr(styled, "ichor_view")$heights, c(2, 1.1))
+  expect_equal(attr(styled, "ichor_view")$panel_heights, c(2, 1.1))
   expect_null(attr(original, "ichor_view")$point_stroke)
 })
 
 test_that("concordance styling rejects malformed dimensions", {
   a <- example_sample("a"); b <- example_sample("b")
   for (bad in list(1, c(1, 2, 3), c(1, 0), c(1, -1), c(1, NA), c(1, Inf), "2:1")) {
-    expect_error(plot_ichor_concordance(a, b, heights = bad), "heights must")
+    expect_error(plot_ichor_concordance(a, b, panel_heights = bad), "panel_heights must")
   }
   for (bad in list(-1, NA_real_, Inf, c(0, 1))) {
     expect_error(plot_ichor_concordance(a, b, segment_linewidth = bad), "segment_linewidth")
     expect_error(plot_ichor_concordance(a, b, point_stroke = bad), "point_stroke")
   }
+})
+
+test_that("older ggplot can draw equal panels but cannot silently ignore unequal sizing", {
+  local_mocked_bindings(.supports_panel_heights = function() FALSE)
+  a <- example_sample("a"); b <- example_sample("b")
+  p <- plot_ichor_concordance(a, b, region = "chr1:1-4000000", panel_heights = c(2, 2))
+  expect_null(p$theme$panel.heights)
+  expect_s3_class(ggplot2::ggplotGrob(p), "gtable")
+  expect_error(plot_ichor_concordance(a, b, panel_heights = c(2, 1)), "require ggplot2 >= 4")
+  expect_error(plot_ichor_concordance(a, b, heights = c(2, 1)), "unused argument")
+})
+
+test_that("one-sided colors follow sample colors unless explicitly overridden", {
+  a <- example_sample("a"); b <- example_sample("b")
+  sample_colors <- c(a = "#004488", b = "#DDAA33")
+  p <- plot_ichor_concordance(a, b, region = "chr1:1-4000000", sample_colors = sample_colors)
+  fill <- p$scales$get_scales("fill")
+  expect_equal(unname(fill$map(c("a_only", "b_only"))), unname(sample_colors))
+  custom <- .concordance_colors(sample_colors)
+  custom[c("a_only", "b_only")] <- c("#BB5566", "#228833")
+  q <- plot_ichor_concordance(a, b, sample_colors = sample_colors, colors = custom)
+  expect_equal(unname(q$scales$get_scales("fill")$map(c("a_only", "b_only"))), c("#BB5566", "#228833"))
+  expect_error(plot_ichor_concordance(a, b, colors = custom[-1]), "every sample or state")
 })
 
 test_that("concordance track renders headlessly", {

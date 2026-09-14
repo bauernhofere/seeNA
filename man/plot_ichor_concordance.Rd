@@ -19,10 +19,10 @@ plot_ichor_concordance(
   ylim = c(-2, 2),
   sample_labels = c("A", "B"),
   sample_colors = c(a = "#007A87", b = "#B34E18"),
-  colors = .concordance_colors(),
+  colors = NULL,
   point_size = 0.4,
   show_sample_id = TRUE,
-  heights = c(1, 1),
+  panel_heights = c(1, 1),
   segment_linewidth = 0.55,
   point_stroke = NULL
 )
@@ -58,8 +58,9 @@ and fluid identities are never inferred. Use e.g. c("Plasma", "Urine").}
 
 \item{sample_colors}{Two named colors keyed by a,b.}
 
-\item{colors}{Named agreement palette including a_only, b_only, concordant,
-discordant, unavailable and baseline_flag.}
+\item{colors}{Optional named agreement palette including a_only, b_only,
+concordant, discordant, unavailable and baseline_flag. NULL derives the
+one-sided colors from sample_colors; an explicit palette takes precedence.}
 
 \item{point_size}{Upper-panel bin point size.}
 
@@ -67,8 +68,9 @@ discordant, unavailable and baseline_flag.}
 FALSE keeps generic/display names and fitted parameters. Plot data and
 attributes still contain source identifiers; this is not de-identification.}
 
-\item{heights}{Two positive relative panel heights, profiles then agreement
-track. Default c(1,1). Unlike \code{height}, this changes layout, not bar values.}
+\item{panel_heights}{Two positive relative panel heights, profiles then
+agreement track. Default c(1,1). Unequal proportions require ggplot2 >= 4.0.0;
+on older versions they raise an error rather than being silently ignored.}
 
 \item{segment_linewidth}{Upper-panel segment line width; default 0.55.}
 
@@ -104,5 +106,5 @@ a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg3
 b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 plot_ichor_concordance(a, b, region = "chr1:1-5000000", show_sample_id = FALSE)
 plot_ichor_concordance(a, b, region = "chr1:1-5000000",
-  heights = c(2, 1.1), segment_linewidth = 0.32, point_stroke = 0)
+  panel_heights = c(1, 1), segment_linewidth = 0.32, point_stroke = 0)
 }

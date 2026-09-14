@@ -1,8 +1,14 @@
 # ichorViz 0.0.0.9003 (development)
 
-* Added concordance plot styling controls: relative panel `heights`,
+* Added concordance plot styling controls: relative `panel_heights`,
   `segment_linewidth` and `point_stroke`, preserving the existing defaults.
-  Native panel sizing requires ggplot2 >= 4.0.0; the result remains a ggplot.
+  The pre-release argument `heights` was renamed without an alias.
+* Support ggplot2 >= 3.5.0, with a pinned 3.5.2 CI job. Unequal panel proportions
+  require ggplot2 >= 4.0.0 and error on older versions, never silently degrade.
+* One-sided track colors now follow sample_colors unless colors is explicit.
+  All profile plotting paths consistently validate point_size.
+* Validation docs describe coverage instead of maintaining drifting test counts;
+  the README demo uses tighter limits while the function default remains -2,2.
 * Added explicit-pair directional call comparison and a stacked agreement plot:
   shared grid, independent call/logR coverage, unknown mixed/missing calls,
   baseline-evidence flags and optional conservative sex-chromosome gating.

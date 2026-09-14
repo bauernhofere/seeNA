@@ -6,6 +6,7 @@ on:
 
 jobs:
   R-CMD-check:
+    name: R-CMD-check (${{ matrix.config.os }}, ${{ matrix.config.r }}, ${{ matrix.config.ggplot || 'latest ggplot2' }})
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
@@ -16,6 +17,7 @@ jobs:
           - {os: ubuntu-latest, r: oldrel-1}
           - {os: ubuntu-latest, r: release}
           - {os: ubuntu-latest, r: devel}
+          - {os: ubuntu-latest, r: release, ggplot: 'ggplot2@3.5.2'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -30,6 +32,7 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             roxygen2@7.3.3
+            ${{ matrix.config.ggplot || 'any::ggplot2' }}
           needs: check
       - name: Verify generated documentation
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'

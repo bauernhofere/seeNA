@@ -28,10 +28,12 @@ alternatives and limitations. The [methods](../inst/methods.md) define the contr
 
 ## Automated evidence
 
-- Pre-feature working tree: 46 test cases / 217 passing assertions, including
-  the existing four vdiffr snapshots.
-- With the feature: 58 test cases / 279 passing assertions, no failures/errors;
-  two additional vdiffr cases. Existing snapshots were retained.
+- The suite covers the pre-existing profile, comparison and region APIs alongside
+  the paired track. Visual baselines cover ordinary, styled and unresolved
+  sex-reference views. Test totals are reported by the run, not maintained here.
+- Numeric and device tests run on ggplot2 3.5 as well as current versions; visual
+  snapshots target ggplot2 4. Unequal panel sizing is tested on supporting versions
+  and explicitly rejected on older versions. CI pins a ggplot2 3.5.2 job.
 - Added numeric regressions cover all agreement classes, logR sign independence,
   deep-loss versus loss, unequal/shifted grids, missing calls versus missing
   heights, mixed winning modes, disjoint partial support, representative ties,

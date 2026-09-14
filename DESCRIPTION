@@ -14,7 +14,7 @@ Depends:
     R (>= 4.1.0)
 Imports:
     data.table,
-    ggplot2 (>= 4.0.0),
+    ggplot2 (>= 3.5.0),
     grid
 Suggests:
     circlize,

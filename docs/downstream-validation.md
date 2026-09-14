@@ -60,7 +60,8 @@ manuscript workflow.
 
 ## Local evidence
 
-- 44 test cases / 203 passing assertions; no failures or errors.
+- Workflow regressions passed without failures/errors, covering accessors,
+  padding notices, neutral evidence and consistent bin/segment transforms.
 - R CMD check (including installed vignette execution and rebuilding): zero
   errors/warnings; environment NOTE `unable to verify current time`.
 - All 71 canonical samples imported under the new default, with one summary for
