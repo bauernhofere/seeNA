@@ -23,8 +23,8 @@ test_that("repository ignores private inputs and keeps only explicit public fixt
   )
   # Disable personal excludes so another contributor gets the same safeguards.
   result <- system2(Sys.which("git"), c("-C", shQuote(normalizePath(root)), "-c",
-    shQuote(paste0("core.excludesFile=", tempfile())), "check-ignore", "--no-index", "--stdin"),
-    input = c(ignored, public), stdout = TRUE, stderr = TRUE)
+    shQuote(paste0("core.excludesFile=", tempfile())), "check-ignore", "--no-index", "--",
+    shQuote(c(ignored, public))), stdout = TRUE, stderr = TRUE)
   expect_null(attr(result, "status"))
   expect_setequal(result, ignored)
 })
