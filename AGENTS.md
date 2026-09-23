@@ -20,7 +20,8 @@ annotations are supported but are not automatically safe to share.
   separate call/height evidence and sex-reference flags; no inferred pairing.
 - `docs/data-contracts.md`: scientific semantics and compatibility limits.
 - `docs/decision-register.md`: rationale, sources, alternatives and open study gates.
-- `README.Rmd`: executable source for README.md and the four fixture-only pictures.
+- `README.Rmd`: executable source for README.md and the four synthetic gallery pictures.
+- `inst/examples/make-demo.R`: fixed-seed synthetic gallery inputs; no clinical sources.
 - `tests/testthat/test-adversarial.R`: regressions for independent-review findings.
 
 ## Non-negotiable scientific rules
@@ -45,11 +46,13 @@ annotations are supported but are not automatically safe to share.
 ## Privacy and testing
 
 Do not commit clinical files, sample identifiers, local paths, credentials, or
-rendered patient figures. Real data stay outside the repository. Existing tiny
-format fixtures are test-only examples, not biological validation. New malformed
-or boundary-case test inputs must be clearly test-only, never manuscript data.
+rendered patient figures. Real data stay outside the repository. The original
+small format fixtures are test-only examples. The README uses the documented
+synthetic gallery generator; keep its provenance explicit and do not calibrate
+it to clinical profiles. Neither source is biological validation or manuscript
+analysis data. New malformed/boundary-case test inputs must remain test-only.
 No test or example may require private data, credentials, or a network connection.
-`make readme` regenerates only the four allowlisted fixture PNGs in docs/figures;
+`make readme` regenerates only the four allowlisted synthetic PNGs in docs/figures;
 never replace them with patient-derived images. `make audit-reference` is an
 explicit optional network audit of public UCSC chromosome tables, not a test.
 Path redaction and identifier-pattern tests do not de-identify genomic data.

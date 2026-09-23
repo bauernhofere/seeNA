@@ -10,5 +10,9 @@ missing calls, overlap weighting and identity mismatches. Real manuscript
 compatibility/render checks use source files outside the package repository.
 No test fixture should ever be substituted for manuscript analysis data.
 
+The larger README gallery is generated separately by `inst/examples/make-demo.R`;
+see `inst/examples/README.md` for its synthetic recipe. These original parser
+fixtures are not expanded or replaced by the gallery data.
+
 Header reference: ichorCNA v0.4.0 R/output.R, commit
 `d31ed52e9e9aa225084a6d380ba0a81a21e1943a`.

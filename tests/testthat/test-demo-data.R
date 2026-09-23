@@ -1,0 +1,51 @@
+test_that("the gallery generator writes reproducible, valid synthetic inputs", {
+  recipe <- system.file("examples", "make-demo.R", package = "seeNA", mustWork = TRUE)
+  env <- new.env(parent = baseenv())
+  sys.source(recipe, envir = env)
+  first <- tempfile("demo-first-"); second <- tempfile("demo-second-")
+  on.exit(unlink(c(first, second), recursive = TRUE), add = TRUE)
+  set.seed(271)
+  seed <- .Random.seed
+  kind <- RNGkind()
+  manifest <- env$write_demo_cohort(first)
+  expect_identical(.Random.seed, seed)
+  expect_identical(RNGkind(), kind)
+  other <- env$write_demo_cohort(second)
+  files <- list.files(first)
+  expect_identical(files, list.files(second))
+  expect_identical(unname(tools::md5sum(file.path(first, files))),
+                   unname(tools::md5sum(file.path(second, files))))
+  cohort <- read_ichor_cohort(manifest, "hg38", bounds = "error")
+  expect_length(cohort$samples, 24)
+  expect_identical(names(cohort$samples), sprintf("demo-%02d", 1:24))
+  expect_setequal(cohort$metadata$group, c("A", "B", "C"))
+  expect_true(all(vapply(cohort$samples, function(s) nrow(s$bins) > 5000, logical(1))))
+  expect_true(all(vapply(cohort$samples, function(s) is.null(s$coordinate_changes), logical(1))))
+  expect_true(all(vapply(cohort$samples, function(s) all(is.finite(s$segments$median)), logical(1))))
+  m <- ichor_matrix(cohort, value = "segment_median", chromosomes = c(as.character(1:22), "X"))
+  expect_equal(nrow(m$values), 24)
+  expect_gt(ncol(m$values), 3000)
+  expect_true(anyNA(m$values))
+  expect_gt(mean(is.finite(m$values)), 0.9)
+  expect_true(any(m$values > 0.2, na.rm = TRUE))
+  expect_true(any(m$values < -0.2, na.rm = TRUE))
+  expect_equal(length(unique(apply(m$values, 1, paste, collapse = ","))), 24)
+  expect_equal(unname(vapply(cohort$samples, ichor_tf, numeric(1))), cohort$metadata[["TF (%)"]] / 100)
+  pair <- ichor_pair_concordance(cohort$samples[[1]], cohort$samples[[2]], chromosomes = "1")
+  positions <- c(30000001, 80000001, 120000001, 170000001, 205000001)
+  expect_identical(pair$concordance[match(positions, pair$start)],
+                   c("concordant", "a_only", "b_only", "discordant", "unknown"))
+  gap <- m$bins$chr == "1" & m$bins$start >= 202000001 & m$bins$end <= 210000000
+  expect_true(all(is.na(m$values[1:2, gap])))
+  expect_true(all(m$coverage[1:2, gap] == 0))
+  a <- cohort$samples[[1]]
+  medians <- vapply(seq_len(nrow(a$segments)), function(k) {
+    s <- a$segments[k, ]
+    inside <- a$bins$chr == s$chr & a$bins$start >= s$start & a$bins$end <= s$end
+    round(stats::median(a$bins$logR[inside]), 6)
+  }, numeric(1))
+  expect_equal(a$segments$median, medians)
+  expect_error(env$write_demo_cohort(first), "empty")
+  expect_identical(manifest, file.path(first, "manifest.csv"))
+  expect_identical(other, file.path(second, "manifest.csv"))
+})

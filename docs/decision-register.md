@@ -374,8 +374,9 @@ package version alone cannot distinguish all development checkouts.
 
 **Decision:** unit/adversarial tests, actual device rendering, package checks,
 pinned documentation generation and cross-platform CI are required. Keep public
-example images reproducible from the existing tiny format fixtures only; exclude
-clinical files and figures from version control. Public repository visibility
+example images reproducible from documented nonclinical inputs: the small format
+fixtures or the synthetic gallery recipe in D23. Exclude clinical files and
+figures from version control. Public repository visibility
 has author approval following the [publication preflight](publication-audit.md);
 a tagged/archived release requires separate approval. GPL-3-or-later and upstream
 attribution are recorded; final study-code contributor/copyright review is still
@@ -543,6 +544,33 @@ CNA magnitude; weaker urine signal does not establish smaller tumor alterations
 or their biological absence. Shared display limits, fitted TF labels and final
 manuscript interpretation remain study choices. This option is unshifted logR,
 not the optional upstream plotting shift in D08.
+
+### D23 — Reproducible synthetic gallery — documentation policy
+
+**Decision:** the public README uses the installed
+[synthetic generator](../inst/examples/make-demo.R) to demonstrate full profiles
+and a grouped cohort landscape. It creates 24 invented samples on an hg38 500 kb
+grid, with explicit state templates, a specified mixture-signal formula, added
+variation and missing intervals. Files are written to a temporary directory and
+then imported through the public readers. All random-number settings are fixed
+and the caller's RNG state is restored. Original parser fixtures stay unchanged.
+The [recipe](../inst/examples/README.md) and
+[image provenance](figures/README.md) document the source completely.
+
+**Why:** minimal parser fixtures cannot demonstrate dense genomic plots or cohort
+ordering well. Synthetic documentation inputs provide rich, reproducible examples
+without republishing patient data or disguising duplicated observations as a
+cohort. The README focuses on capabilities and usage, with the methods and limits
+linked rather than repeated around every figure.
+
+**Evidence:** [generator regressions](../tests/testthat/test-demo-data.R) check
+repeatability, caller RNG preservation, source validation, segment medians,
+coverage gaps, distinct matrix rows and the deliberately designed agreement
+categories. The executable README renders all four gallery images.
+**Limit:** these are invented examples, not outputs of an ichorCNA fit or a
+biological simulation calibrated to real patients. TF/ploidy are specified values,
+not fitted estimates. Dense plots demonstrate presentation, not calling accuracy
+or the biological validity of these input patterns.
 
 ## Study decisions that this audit cannot approve
 

@@ -1,5 +1,8 @@
 # seeNA 0.0.0.9003 (development)
 
+* Reworked the README around practical plotting examples and a dense synthetic
+  gallery. The installed `examples/make-demo.R` recipe reproducibly generates
+  24 demonstration samples; original parser fixtures and analysis APIs are unchanged.
 * Package renamed to `seeNA`; load it with `library(seeNA)`. Condition classes
   use the `seena_*` prefix. Existing `ichor_*` functions and data classes keep
   their names because they describe the supported ichorCNA input format.
