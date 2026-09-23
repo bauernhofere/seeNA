@@ -6,3 +6,8 @@
 ^NOTICE\.md$
 ^README\.Rmd$
 ^docs$
+^\.(claude|pi|vscode|idea|quarto|ssh|aws)$
+^\.(env.*|Renviron.*|Rprofile|netrc)$
+^(data|data-raw|private|local|output|outputs|results|check|_site|_book)$
+^[^/]+(_files|_cache)$
+^[^/]+\.(csv|tsv|txt|xls|xlsx|rds|RDS|rda|Rdata|RData|qs|fst|parquet|h5|hdf5|seg|bam|bai|cram|crai|sam|vcf|bcf|fastq|fq|wig|bw|bigWig|bed|bedGraph|bedgraph|gz|zip|tgz|log|html|pdf|docx|pptx|png|svg|jpg|jpeg|tif|tiff|webp|gif|pem|key|p12|pfx)$

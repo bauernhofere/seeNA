@@ -25,7 +25,7 @@ values and ambiguous columns raise a classed schema error. Coordinates are
 1-based closed intervals.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 bins <- read_ichor_cna(file.path(root, "example-a.cna.seg"))
 head(bins)
 attr(bins, "sample_id")

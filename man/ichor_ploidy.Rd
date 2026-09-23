@@ -16,7 +16,7 @@ Positive numeric scalar, or \code{NA_real_} if parameters are unavailable.
 Read fitted tumor ploidy
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
                        params = file.path(root, "example-a.params.txt"),
                        genome_build = "hg38")

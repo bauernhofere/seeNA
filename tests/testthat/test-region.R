@@ -8,6 +8,6 @@ test_that("whole chromosomes and intervals parse", {
 })
 
 test_that("invalid intervals are rejected", {
-  expect_error(parse_ichor_region("chr1:20-10", "hg38"), class = "ichorviz_region_error")
-  expect_error(parse_ichor_region("chr27", "hg38"), class = "ichorviz_region_error")
+  expect_error(parse_ichor_region("chr1:20-10", "hg38"), class = "seena_region_error")
+  expect_error(parse_ichor_region("chr27", "hg38"), class = "seena_region_error")
 })

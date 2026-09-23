@@ -1,14 +1,14 @@
 .default_if_null <- function(x, default) if (is.null(x)) default else x
 
-.ichor_abort <- function(message, class = "ichorviz_error") {
+.ichor_abort <- function(message, class = "seena_error") {
   stop(structure(list(message = message, call = NULL),
-                 class = unique(c(class, "ichorviz_error", "error", "condition"))))
+                 class = unique(c(class, "seena_error", "error", "condition"))))
 }
 
 .assert_file <- function(path, label) {
   if (!is.character(path) || length(path) != 1L || is.na(path) ||
       !nzchar(path) || !file.exists(path) || dir.exists(path)) {
-    .ichor_abort(sprintf("%s must identify an existing file.", label), "ichorviz_file_error")
+    .ichor_abort(sprintf("%s must identify an existing file.", label), "seena_file_error")
   }
   normalizePath(path, mustWork = TRUE)
 }
@@ -36,7 +36,7 @@
   text <- .text_missing(x)
   value <- suppressWarnings(as.numeric(text))
   if (any(!is.na(text) & (is.na(value) | (!allow_infinite & !is.finite(value))))) {
-    .ichor_abort(paste("Malformed or infinite", label), "ichorviz_schema_error")
+    .ichor_abort(paste("Malformed or infinite", label), "seena_schema_error")
   }
   value
 }
@@ -46,7 +46,7 @@
   yes <- c("1", "true", "t", "yes", "y")
   no <- c("0", "false", "f", "no", "n")
   if (any(!is.na(text) & !text %in% c(yes, no))) {
-    .ichor_abort("Unrecognized subclone_status token.", "ichorviz_schema_error")
+    .ichor_abort("Unrecognized subclone_status token.", "seena_schema_error")
   }
   out <- text %in% yes
   out[is.na(text)] <- NA
@@ -75,7 +75,7 @@
     grepl("^HLAMP[0-9]+$", x)
   if (any(!is.na(x) & !known)) {
     .ichor_abort("Unknown copy-number call; missing calls must be NA, not neutral.",
-                 "ichorviz_schema_error")
+                 "seena_schema_error")
   }
   x
 }

@@ -1,5 +1,16 @@
-# ichorViz 0.0.0.9003 (development)
+# seeNA 0.0.0.9003 (development)
 
+* Package renamed to `seeNA`; load it with `library(seeNA)`. Condition classes
+  use the `seena_*` prefix. Existing `ichor_*` functions and data classes keep
+  their names because they describe the supported ichorCNA input format.
+* `ichor_matrix(value = "segment_median")` builds continuous matrices directly
+  from exported raw segment medians, with bp-weighted means and finite
+  segment-span coverage (not bin/read coverage). Segment files are required;
+  no source-bin overwrite, fallback or purity/ploidy transform is performed.
+* `plot_ichor_heatmap()` gains `group` (row blocks from a metadata column, with
+  `row_order` kept inside each block), `row_labels` (display text only),
+  `legend_title`, `legend_direction` and `text_style` (font family, size and
+  colour for all heatmap text). Call legends outline their keys.
 * Added concordance plot styling controls: relative `panel_heights`,
   `segment_linewidth` and `point_stroke`, preserving the existing defaults.
   The pre-release argument `heights` was renamed without an alias.
@@ -30,7 +41,7 @@
   now tracks the branch and records `RemoteSha`.
 * Added vdiffr snapshot tests for the ggplot outputs (`vdiffr` in Suggests).
 
-# ichorViz 0.0.0.9002
+# seeNA 0.0.0.9002
 
 * Added a source/evidence-linked decision register, distinguishing upstream
   contracts, package policies and unresolved live-manuscript assumptions.
@@ -48,7 +59,7 @@
 * Fixed cross-platform rendering tests to close PDF devices before checking bytes.
 * Moved development tooling out of Suggests; version remains pre-release.
 
-# ichorViz 0.0.0.9001
+# seeNA 0.0.0.9001
 
 * Strict numeric/flag/call parsing preserves missingness and rejects ambiguity.
 * Reconciled source identities before aliasing, validated segments and bounds,
@@ -66,7 +77,7 @@
 * Added adversarial scientific and rendering regression tests, methods contracts
   and a manuscript release gate. This remains a private development version.
 
-# ichorViz 0.0.0.9000
+# seeNA 0.0.0.9000
 
 * Added parsers for `.cna.seg`, `.seg`, and `.params.txt` output.
 * Added validated sample and cohort objects.

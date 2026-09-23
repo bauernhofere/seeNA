@@ -26,7 +26,7 @@ reassign calls, and it does not guarantee that every gain or loss lies
 above or below zero. See the installed methods contract for limits.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
                        file.path(root, "example-a.seg"),
                        file.path(root, "example-a.params.txt"),

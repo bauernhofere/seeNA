@@ -17,7 +17,7 @@ Checks that values, coverage and mixed layers align with the bin grid and
 sample metadata and obey the matrix measurement and coverage rules.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 validate_ichor_matrix(ichor_matrix(cohort, value = "logR", chromosomes = "2"))
 }

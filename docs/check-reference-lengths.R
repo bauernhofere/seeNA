@@ -6,7 +6,7 @@ for (build in c("hg19", "hg38")) {
   utils::download.file(url, path, mode = "wb", quiet = TRUE)
   reference <- utils::read.table(path, col.names = c("chr", "length"),
                                  colClasses = c("character", "numeric"))
-  layout <- ichorViz::ichor_genome_layout(build, c(as.character(1:22), "X", "Y"))
+  layout <- seeNA::ichor_genome_layout(build, c(as.character(1:22), "X", "Y"))
   expected <- reference$length[match(paste0("chr", layout$chr), reference$chr)]
   stopifnot(!anyNA(expected), identical(layout$length, expected))
   cat(sprintf("%s: all 24 primary chromosome lengths match; downloaded file MD5 %s\n",

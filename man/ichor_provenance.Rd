@@ -22,7 +22,7 @@ unless \code{retain_paths = TRUE} was used at import. MD5 is a reproducibility
 checksum, not a security or de-identification measure.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 ichor_provenance(a)
 }

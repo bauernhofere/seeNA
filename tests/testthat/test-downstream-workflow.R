@@ -20,9 +20,9 @@ test_that("window policy recognizes regular terminal padding and records it", {
 })
 
 test_that("window policy refuses off-grid, excessive or unsupported padding", {
-  expect_error(read_ichor_sample(window_file(terminal_end = 59000001), genome_build = "hg38"), class = "ichorviz_bounds_error")
-  expect_error(read_ichor_sample(window_file(terminal_start = 58000002), genome_build = "hg38"), class = "ichorviz_bounds_error")
-  expect_error(read_ichor_sample(window_file(terminal_end = 60000000), genome_build = "hg38"), class = "ichorviz_bounds_error")
+  expect_error(read_ichor_sample(window_file(terminal_end = 59000001), genome_build = "hg38"), class = "seena_bounds_error")
+  expect_error(read_ichor_sample(window_file(terminal_start = 58000002), genome_build = "hg38"), class = "seena_bounds_error")
+  expect_error(read_ichor_sample(window_file(terminal_end = 60000000), genome_build = "hg38"), class = "seena_bounds_error")
   # Both builds can share the same terminal window: acceptance is not build proof.
   f <- window_file(chr = "3", terminal_start = 198000001, terminal_end = 199000000)
   expect_message(a <- read_ichor_sample(f, genome_build = "hg19"), "caller-specified")
@@ -56,7 +56,7 @@ test_that("segment padding must match an observed terminal bin boundary", {
   expect_setequal(s$coordinate_changes$role, c("bins", "segments"))
   d$end <- 59000001
   data.table::fwrite(d, seg, sep = "\t")
-  expect_error(read_ichor_sample(f, seg, genome_build = "hg38"), class = "ichorviz_bounds_error")
+  expect_error(read_ichor_sample(f, seg, genome_build = "hg38"), class = "seena_bounds_error")
 })
 
 test_that("cohort padding aggregation does not suppress unrelated warnings", {
@@ -88,8 +88,8 @@ test_that("parameter accessors and adjusted logR are explicit and immutable", {
   a$params <- NULL
   expect_identical(ichor_tf(a), NA_real_)
   expect_identical(ichor_ploidy(a), NA_real_)
-  expect_error(ichor_adjusted_logr(a), class = "ichorviz_parameter_error")
-  expect_error(plot_ichor_profile(a, ploidy_adjust = TRUE), class = "ichorviz_parameter_error")
+  expect_error(ichor_adjusted_logr(a), class = "seena_parameter_error")
+  expect_error(plot_ichor_profile(a, ploidy_adjust = TRUE), class = "seena_parameter_error")
 })
 
 test_that("all plotting paths apply the same optional shift to bins and segments", {

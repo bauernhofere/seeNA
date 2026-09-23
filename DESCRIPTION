@@ -1,4 +1,4 @@
-Package: ichorViz
+Package: seeNA
 Title: Explore and Compare ichorCNA Copy-Number Profiles
 Version: 0.0.0.9003
 Authors@R:
@@ -8,8 +8,8 @@ Description: Reads, validates, harmonizes, and visualizes output from ichorCNA.
     samples, and cohort-scale bin matrices and heatmaps. The package consumes
     existing ichorCNA output and does not perform copy-number calling.
 License: GPL (>= 3) + file LICENSE
-URL: https://github.com/bauernhofere/ichorViz
-BugReports: https://github.com/bauernhofere/ichorViz/issues
+URL: https://github.com/bauernhofere/seeNA
+BugReports: https://github.com/bauernhofere/seeNA/issues
 Depends:
     R (>= 4.1.0)
 Imports:

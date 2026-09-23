@@ -2,7 +2,7 @@
   if (is.na(path) || !nzchar(path)) return(NA_character_)
   expanded <- path.expand(path)
   if (!grepl("^(/|[A-Za-z]:[/\\\\])", expanded)) {
-    if (is.null(root)) .ichor_abort("Relative paths in a data-frame manifest require root.", "ichorviz_manifest_error")
+    if (is.null(root)) .ichor_abort("Relative paths in a data-frame manifest require root.", "seena_manifest_error")
     expanded <- file.path(root, expanded)
   }
   normalizePath(expanded, mustWork = FALSE)
@@ -32,7 +32,7 @@
 #' @return A validated `ichor_cohort` with `samples` and `metadata` in
 #'   manifest order.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 #' cohort
 #' cohort$metadata
@@ -51,13 +51,13 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
                             colClasses = list(character = "sample_id"))
   } else if (is.data.frame(manifest)) {
     tab <- as.data.frame(manifest, stringsAsFactors = FALSE)
-  } else .ichor_abort("manifest must be a file path or data frame.", "ichorviz_manifest_error")
+  } else .ichor_abort("manifest must be a file path or data frame.", "seena_manifest_error")
   if (!all(c("sample_id", "cna_seg") %in% names(tab)) || anyDuplicated(names(tab))) {
-    .ichor_abort("Manifest needs unique columns including sample_id and cna_seg.", "ichorviz_manifest_error")
+    .ichor_abort("Manifest needs unique columns including sample_id and cna_seg.", "seena_manifest_error")
   }
   tab$sample_id <- as.character(tab$sample_id)
   if (!nrow(tab) || anyNA(tab$sample_id) || any(!nzchar(trimws(tab$sample_id))) || anyDuplicated(tab$sample_id)) {
-    .ichor_abort("Manifest IDs must be non-empty and unique.", "ichorviz_manifest_error")
+    .ichor_abort("Manifest IDs must be non-empty and unique.", "seena_manifest_error")
   }
   file_cols <- intersect(c("cna_seg", "seg", "params"), names(tab))
   for (nm in file_cols) tab[[nm]] <- vapply(as.character(tab[[nm]]), .resolve_manifest_path, character(1), root = root)
@@ -72,8 +72,8 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
       params = if ("params" %in% names(tab)) tab$params[i] else NULL,
       genome_build = genome_build, sample_id = tab$sample_id[i],
       retain_paths = retain_paths, bounds = bounds)),
-      ichorviz_bounds_warning = function(w) invokeRestart("muffleWarning"),
-      ichorviz_window_padding = function(m) invokeRestart("muffleMessage")),
+      seena_bounds_warning = function(w) invokeRestart("muffleWarning"),
+      seena_window_padding = function(m) invokeRestart("muffleMessage")),
       error = function(e) list(error = conditionMessage(e)))
   }
   if (workers > 1L && .Platform$OS.type != "windows") {
@@ -88,7 +88,7 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
       reason <- if (is.list(results[[i]])) results[[i]]$error else "Worker failure"
       sprintf("row %d (%s): %s", i, tab$sample_id[i], .default_if_null(reason, "Worker failure"))
     }, character(1))
-    .ichor_abort(paste("Cohort import aborted:", paste(details, collapse = "; ")), "ichorviz_manifest_error")
+    .ichor_abort(paste("Cohort import aborted:", paste(details, collapse = "; ")), "seena_manifest_error")
   }
   samples <- lapply(results, `[[`, "sample")
   names(samples) <- tab$sample_id
@@ -107,7 +107,7 @@ read_ichor_cohort <- function(manifest, genome_build, workers = 1L, root = NULL,
 #' @param x An `ichor_cohort`.
 #' @return `x`, invisibly.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 #' validate_ichor_cohort(cohort)
 #' @export

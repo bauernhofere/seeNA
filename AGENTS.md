@@ -1,4 +1,4 @@
-# ichorViz contributor and coding-agent guide
+# seeNA contributor and coding-agent guide
 
 ## Scope and architecture
 
@@ -14,7 +14,7 @@ annotations are supported but are not automatically safe to share.
 - `R/provenance.R`: immutable import-time fingerprints; paths opt-in.
 - `R/genome.R`: coordinate reference and region parsing.
 - `R/cohort.R`: atomic manifest import, sample/metadata order validation.
-- `R/matrix.R`: continuous means, categorical modes, coverage and mixed flags.
+- `R/matrix.R`: bin/segment continuous means, categorical modes, coverage and mixed flags.
 - `R/plot.R`, `R/heatmap.R`: standard plot objects, no file writes.
 - `R/concordance.R`, `R/plot-concordance.R`: explicit-pair directional comparison,
   separate call/height evidence and sex-reference flags; no inferred pairing.
@@ -31,6 +31,8 @@ annotations are supported but are not automatically safe to share.
 - Raw event and corrected_call are distinct. Never silently substitute them.
 - Call codes are categories: no arithmetic averaging or silent tie-breaking.
 - Coverage and heterogeneous-call flags travel with the matrix.
+- `segment_median` coverage is finite segment-span coverage, not bin/read coverage.
+  Never overwrite source bin logR with segment medians.
 - Match source component IDs before applying aliases. Identical IDs do not prove
   the files came from the same fitted run; that remains an input-selection duty.
 - Inputs are read-only. Default window-padding handling requires regular source
@@ -51,6 +53,10 @@ No test or example may require private data, credentials, or a network connectio
 never replace them with patient-derived images. `make audit-reference` is an
 explicit optional network audit of public UCSC chromosome tables, not a test.
 Path redaction and identifier-pattern tests do not de-identify genomic data.
+`.gitignore` allows only the named public fixtures; do not widen its exceptions
+for real inputs. Ignoring a file does not remove it from Git history. Audit
+tracked files and history before publishing new data or changing visibility.
+Keep this guide tracked; `.Rbuildignore` excludes it from the installed package.
 
 ## Change checklist
 
@@ -69,5 +75,6 @@ Path redaction and identifier-pattern tests do not de-identify genomic data.
 `make check` generates docs, tests, and performs R CMD check. Passing it is
 necessary, not evidence of scientific correctness. Manuscript release also needs
 real-input reconciliation, visual review, a pinned commit, and author approval.
-Do not publish the private repository, tag a release, or mint citation metadata
-without that approval. Review reports are hypotheses to verify, not authority.
+Public repository visibility does not approve manuscript conclusions or a
+software release. Do not tag a release or create an archive/DOI without author
+approval. Review reports are hypotheses to verify, not authority.

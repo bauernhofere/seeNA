@@ -1,10 +1,10 @@
 # Decision register: rationale, evidence and limits
 
-**Scope:** the current ichorViz development branch (see `git log` for the
+**Scope:** the current seeNA development branch (see `git log` for the
 exact commit).
 This register makes decisions defensible and reviewable; it does **not** certify
 clinical validity or retroactively turn engineering choices into published
-methods. No literature reference below endorses ichorViz or all its defaults.
+methods. No literature reference below endorses seeNA or all its defaults.
 
 ## How to read the evidence
 
@@ -375,9 +375,11 @@ package version alone cannot distinguish all development checkouts.
 **Decision:** unit/adversarial tests, actual device rendering, package checks,
 pinned documentation generation and cross-platform CI are required. Keep public
 example images reproducible from the existing tiny format fixtures only; exclude
-clinical files and figures from version control. Keep the repository private and
-PR draft until publication approval. GPL-3-or-later and upstream attribution are
-recorded; final study-code contributor/copyright review is still required.
+clinical files and figures from version control. Public repository visibility
+has author approval following the [publication preflight](publication-audit.md);
+a tagged/archived release requires separate approval. GPL-3-or-later and upstream
+attribution are recorded; final study-code contributor/copyright review is still
+required.
 
 **Why:** object-class tests miss rendering failures; the previous PDF test checked
 bytes before device closure, and a roxygen version change caused documentation
@@ -388,8 +390,8 @@ justify republishing patient profiles without permission.
 [validation history](downstream-validation.md), [NOTICE](../NOTICE.md),
 [fixture provenance](../inst/extdata/README.md), [README source](../README.Rmd).
 An earlier development commit passed all five CI configurations:
-[PR run](https://github.com/bauernhofere/ichorViz/actions/runs/34724852864) and
-[push run](https://github.com/bauernhofere/ichorViz/actions/runs/34724851027).
+[PR run](https://github.com/bauernhofere/seeNA/actions/runs/34724852864) and
+[push run](https://github.com/bauernhofere/seeNA/actions/runs/34724851027).
 **Limit:** minimum declared R 4.1 has not been separately verified by these CI
 configurations. Rendering/tests/source compatibility are not independent clinical
 validation or author endorsement. No release DOI/date is invented.
@@ -488,6 +490,60 @@ cropping follows aggregation, so a displayed partial target bin still summarizes
 its complete target interval. Upper points retain source midpoints, lower bars
 use the target grid. No automatic equivalence with the manuscript is claimed.
 
+### D21 — Grouped heatmap rows and presentation arguments — retained display policy
+
+**Decision:** ComplexHeatmap stays the only heatmap renderer. `plot_ichor_heatmap()`
+maps `group` to `row_split` with slice order fixed (factor levels, otherwise first
+appearance in `row_order`), no slice clustering, and rejects `group` with
+`cluster_rows`. `row_labels` replace displayed text while rows stay keyed by sample
+ID. `legend_direction` and `text_style` (`fontfamily`, `fontsize`, `col` only) are
+presentation controls; call legend keys are outlined so a white state stays visible.
+
+**Why:** paired and longitudinal designs need blocks of rows in a caller-supplied
+order, and figures need their text to match surrounding panels. A separate ggplot
+landscape renderer was prototyped and rejected: it duplicated this function's
+semantics for the sake of theming. Callers pass their own style values instead of
+the package translating ggplot themes.
+
+**Evidence:** [heatmap.R](../R/heatmap.R), block-order, label, style, legend and
+validation tests in [test-heatmap-grouping.R](../tests/testthat/test-heatmap-grouping.R).
+**Limit:** block membership and order are study choices, not results. `text_style`
+does not cover gaps, borders or colours. Fonts must exist on the device that
+builds and draws the heatmap, because label widths are measured when the object is
+created. Placing the drawn heatmap in a ggplot layout is left to the caller.
+
+### D22 — Exported segment-median matrices — retained contract/policy
+
+**Decision:** `ichor_matrix(value = "segment_median")` aggregates the exported
+segment `median` directly onto the requested grid (1 Mb by default), using D10's
+bp-weighted continuous mean and coverage threshold. The source bin logR remains
+unchanged. Every sample needs an explicitly supplied selected-run segment table;
+there is no fallback to bins, refitting, purity correction or ploidy shift.
+Missing medians and segment gaps contribute no support. Coverage refers to finite
+segment spans, which may bridge absent/filtered source bins; it is **not**
+observed bin/read coverage and no bin mask is applied. At boundaries this is a
+weighted mean of exported medians, not a newly computed median. Continuous
+`mixed` flags remain FALSE. `value`, `aggregation` and source-file fingerprints
+record the operation and inputs without a new renderer or data overwrite.
+
+**Why:** continuous segment-level signal retains amplitude while reducing
+bin-level speckling. Discrete calls discard amplitude; tumor-CN estimates are a
+different quantity. Overwriting bin logR with segment values would falsely label
+the source layer and make coverage semantics opaque. Segment-span coverage is
+explicit rather than silently borrowing a mask from a different measurement.
+
+**Evidence:** U1/U2 export and plot segment medians; [matrix.R](../R/matrix.R)
+and [test-segment-matrix.R](../tests/testthat/test-segment-matrix.R) cover exported
+values, weighted boundaries, NA/coverage, absent segment files/chromosomes,
+short terminal bins, independent segment/bin support, input immutability,
+validation/allocation guards and actual ComplexHeatmap rendering.
+**Limit:** segmentation is fitted smoothing, not independent evidence for an
+alteration or validation of a low-TF fit. LogR amplitude depends on TF as well as
+CNA magnitude; weaker urine signal does not establish smaller tumor alterations
+or their biological absence. Shared display limits, fitted TF labels and final
+manuscript interpretation remain study choices. This option is unshifted logR,
+not the optional upstream plotting shift in D08.
+
 ## Study decisions that this audit cannot approve
 
 | Decision | Current boundary | Required evidence / owner |
@@ -499,7 +555,7 @@ use the target grid. No automatic equivalence with the manuscript is claimed.
 | Dead band 0.35, clipping at ±2, palette saturation at ±1 | Existing study display choices, **not** package defaults or CNA thresholds | State rationale and sensitivity; no biological optimum has been demonstrated here |
 | Plasma-burden row ordering | Existing study presentation | Define burden/denominator/missingness and freeze tie/pair ordering policy |
 | Sex-chromosome reference and interpretation | Evidence helper does not guess | Inspect run configuration and available observations; report unsupported/ambiguous cases |
-| Final figures, attribution and citation | Draft/private; no archive or release tag | Author visual/scientific approval, contributor review, pinned artifact and approved archive/publication |
+| Final figures, attribution and citation | Draft manuscript figures; public development code, no archive or release tag | Author visual/scientific approval, contributor review, pinned artifact and approved archive/publication |
 
 See [review triage](review-triage.md) for the existing study workflow and
 [vignette](../vignettes/manuscript-workflow.Rmd) for the explicit selection recipe.
@@ -520,9 +576,9 @@ validation**. No patient-level content is reproduced here.
 2. **Wrapper baseline is less conservative than the package helper.** The local
    function takes a mode, falls back to autosomal CN 2 if absent, and borrows that
    value for X if X evidence is absent. Those are assumptions, not observed
-   evidence. Its name also masks the package export; merely updating ichorViz
+   evidence. Its name also masks the package export; merely updating seeNA
    does not adopt the package's diagnostic behavior. Migrate deliberately using
-   `ichorViz::ichor_neutral_cn()` and an explicit missing/ambiguous-evidence policy;
+   `seeNA::ichor_neutral_cn()` and an explicit missing/ambiguous-evidence policy;
    its data-frame result is not a drop-in replacement for the wrapper's vector.
 3. **Run ambiguity remains.** The resolver chooses the first candidate within
    `tol=0.01` (one percentage point of TF), not a unique eligible solution. This

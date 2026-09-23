@@ -42,7 +42,7 @@ in region views. Which samples belong together comes from your study
 design, not from filenames. See the installed methods contract for limits.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
                        file.path(root, "example-a.seg"), genome_build = "hg38")
 b <- read_ichor_sample(file.path(root, "example-b.cna.seg"),

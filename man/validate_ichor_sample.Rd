@@ -18,7 +18,7 @@ non-overlapping in-build intervals, numeric measurements and parameter
 ranges.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 validate_ichor_sample(a)
 }

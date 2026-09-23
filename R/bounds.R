@@ -8,7 +8,7 @@
   fail <- function() .ichor_abort(paste(
     "Out-of-build intervals do not match supported fixed-window terminal padding.",
     "Verify the genome build and source bin grid; use bounds = 'error' for strict bounds",
-    "or explicit bounds = 'trim' only after inspecting the original intervals."), "ichorviz_bounds_error")
+    "or explicit bounds = 'trim' only after inspecting the original intervals."), "seena_bounds_error")
 
   # Evidence comes from observed interior bins, never the amount of overhang alone.
   interior <- which(is.finite(bins$start) & is.finite(bins$end) & bins$start >= 1 & bins$end < limit)
@@ -35,10 +35,10 @@
                   n_intervals, n_samples, bounds)
   if (bounds == "trim") {
     warning(structure(list(message = text, call = NULL),
-                      class = c("ichorviz_bounds_warning", "warning", "condition")))
+                      class = c("seena_bounds_warning", "warning", "condition")))
   } else {
     message(structure(list(message = paste0(text, "\n"), call = NULL),
-                      class = c("ichorviz_window_padding", "message", "condition")))
+                      class = c("seena_window_padding", "message", "condition")))
   }
   invisible(NULL)
 }

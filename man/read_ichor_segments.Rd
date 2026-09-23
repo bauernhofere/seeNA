@@ -18,6 +18,6 @@ Reads a \code{.seg} file, or the separate \code{.seg.txt} export with \code{chro
 \code{num.mark} and \code{seg.median.logR} headers, into a normalized data frame.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 read_ichor_segments(file.path(root, "example-a.seg"))
 }

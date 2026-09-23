@@ -69,27 +69,27 @@ ichor_genome_layout <- function(genome_build, chromosomes = c(as.character(1:22)
 parse_ichor_region <- function(region, genome_build) {
   genome_build <- match.arg(genome_build, c("hg19", "hg38"))
   if (length(region) != 1L || is.na(region) || !nzchar(region)) {
-    .ichor_abort("region must be a non-empty scalar.", "ichorviz_region_error")
+    .ichor_abort("region must be a non-empty scalar.", "seena_region_error")
   }
   clean <- gsub("[,]", "", trimws(region))
   if (!grepl("^(chr)?([0-9]+|X|Y)(:[0-9]+-[0-9]+)?$", clean, ignore.case = TRUE)) {
-    .ichor_abort("Use chromosome or chr:start-end with integer coordinates.", "ichorviz_region_error")
+    .ichor_abort("Use chromosome or chr:start-end with integer coordinates.", "seena_region_error")
   }
   pieces <- strsplit(clean, ":", fixed = TRUE)[[1]]
   chr <- .normalize_chr(pieces[1])
   sizes <- .chromosome_sizes(genome_build)
   chr_length <- sizes$length[match(chr, sizes$chr)]
-  if (is.na(chr_length)) .ichor_abort(sprintf("Unsupported chromosome: %s", chr), "ichorviz_region_error")
+  if (is.na(chr_length)) .ichor_abort(sprintf("Unsupported chromosome: %s", chr), "seena_region_error")
 
   if (length(pieces) == 1L) return(data.frame(chr = chr, start = 1, end = chr_length))
-  if (length(pieces) != 2L) .ichor_abort("Use region syntax chr:start-end.", "ichorviz_region_error")
+  if (length(pieces) != 2L) .ichor_abort("Use region syntax chr:start-end.", "seena_region_error")
   bounds <- strsplit(pieces[2], "-", fixed = TRUE)[[1]]
-  if (length(bounds) != 2L) .ichor_abort("Use region syntax chr:start-end.", "ichorviz_region_error")
+  if (length(bounds) != 2L) .ichor_abort("Use region syntax chr:start-end.", "seena_region_error")
   start <- .as_number(bounds[1]); end <- .as_number(bounds[2])
   if (!is.finite(start) || !is.finite(end) || start < 1 || end < start || end > chr_length) {
     .ichor_abort(sprintf("Region lies outside %s (length %s).", chr,
                          format(chr_length, big.mark = ",", scientific = FALSE)),
-                 "ichorviz_region_error")
+                 "seena_region_error")
   }
   data.frame(chr = chr, start = start, end = end)
 }

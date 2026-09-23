@@ -1,17 +1,17 @@
 test_that("missing is never neutral or false and unknown tokens fail", {
   expect_equal(.call_score(c(NA, "NEUT", "HETD", "GAIN", "HLAMP12", "HOMD")), c(NA, 0, -1, 1, 1, -2))
   expect_equal(.as_flag(c(NA, "", "false", "TRUE", "0", "1")), c(NA, NA, FALSE, TRUE, FALSE, TRUE))
-  expect_error(ichor_call_state("TYPO"), class = "ichorviz_schema_error")
-  expect_error(.as_flag("uncertain"), class = "ichorviz_schema_error")
-  expect_error(.as_number("bad"), class = "ichorviz_schema_error")
-  expect_error(.as_number("Inf"), class = "ichorviz_schema_error")
+  expect_error(ichor_call_state("TYPO"), class = "seena_schema_error")
+  expect_error(.as_flag("uncertain"), class = "seena_schema_error")
+  expect_error(.as_number("bad"), class = "seena_schema_error")
+  expect_error(.as_number("Inf"), class = "seena_schema_error")
   expect_equal(.as_number(c("NA", "1.5", "")), c(NA, 1.5, NA))
 })
 
 test_that("source identity cannot be overridden by an alias", {
   expect_error(read_ichor_sample(fixture_path("example-a.cna.seg"),
     fixture_path("example-b.seg"), fixture_path("example-b.params.txt"),
-    "hg38", sample_id = "alias"), class = "ichorviz_identity_error")
+    "hg38", sample_id = "alias"), class = "seena_identity_error")
   a <- read_ichor_sample(fixture_path("example-a.cna.seg"), fixture_path("example-a.seg"),
     fixture_path("example-a.params.txt"), "hg38", sample_id = "alias")
   expect_identical(a$sample_id, "alias")
@@ -28,23 +28,23 @@ test_that("all interval layers and measurements are validated", {
   for (layer in c("bins", "segments")) {
     a <- example_sample("a")
     a[[layer]]$start[1] <- 0.5
-    expect_error(validate_ichor_sample(a), class = "ichorviz_validation_error")
+    expect_error(validate_ichor_sample(a), class = "seena_validation_error")
     a <- example_sample("a")
     a[[layer]]$end[1] <- 3e8
-    expect_error(validate_ichor_sample(a), class = "ichorviz_validation_error")
+    expect_error(validate_ichor_sample(a), class = "seena_validation_error")
     a <- example_sample("a")
     a[[layer]]$chr[1] <- NA_character_
-    expect_error(validate_ichor_sample(a), class = "ichorviz_validation_error")
+    expect_error(validate_ichor_sample(a), class = "seena_validation_error")
     a <- example_sample("a")
     a[[layer]]$start[2] <- a[[layer]]$end[1]
-    expect_error(validate_ichor_sample(a), class = "ichorviz_validation_error")
+    expect_error(validate_ichor_sample(a), class = "seena_validation_error")
   }
   a <- example_sample("a")
   a$bins$logR[] <- NA_real_
   expect_invisible(validate_ichor_sample(a))
   expect_error(plot_ichor_profile(a), "No finite")
   a$bins$copy_number[1] <- -1
-  expect_error(validate_ichor_sample(a), class = "ichorviz_validation_error")
+  expect_error(validate_ichor_sample(a), class = "seena_validation_error")
 })
 
 test_that("component schema ambiguity is an error, not a heuristic", {
@@ -98,7 +98,7 @@ test_that("diagnostic inverse-copy-number infinities are distinct from logR", {
   expect_identical(read_ichor_cna(f)$logR_copy_number[1], Inf)
   d[["example-a.logR"]][1] <- Inf
   data.table::fwrite(d, f, sep = "\t")
-  expect_error(read_ichor_cna(f), class = "ichorviz_schema_error")
+  expect_error(read_ichor_cna(f), class = "seena_schema_error")
 })
 
 test_that("terminal clipping is explicit, recorded, and does not select a build", {
@@ -208,7 +208,7 @@ test_that("plotting never changes bin midpoints or mixes optional schemas", {
   expect_error(plot_ichor_profile(a), "Requested call_column")
   expect_s3_class(plot_ichor_profile(a, call_column = "event"), "ggplot")
   for (bad in c("chr1:", "chr1:1-", "chr1:1.5-2", "chr1:1-2-")) {
-    expect_error(parse_ichor_region(bad, "hg38"), class = "ichorviz_region_error")
+    expect_error(parse_ichor_region(bad, "hg38"), class = "seena_region_error")
   }
 })
 

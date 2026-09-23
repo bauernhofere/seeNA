@@ -37,7 +37,7 @@ Zooms one or more samples into a chromosome or \code{chr:start-end} interval
 using the original bin midpoints; a thin wrapper around \code{\link[=plot_ichor_compare]{plot_ichor_compare()}}.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
                        file.path(root, "example-a.seg"), genome_build = "hg38")
 plot_ichor_region(a, "chr1:1-4000000")

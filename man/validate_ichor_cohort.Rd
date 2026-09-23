@@ -17,7 +17,7 @@ Checks that every sample validates, identifiers are unique, metadata rows
 match sample order and all samples share the cohort genome build.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 validate_ichor_cohort(cohort)
 }

@@ -29,7 +29,7 @@ gender-based guess or borrowing between chromosome classes is applied.
 Check \code{status} before using the value downstream.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 ichor_neutral_cn(a)
 }

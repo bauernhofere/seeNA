@@ -48,7 +48,7 @@ Loading is atomic: any failed sample aborts the whole import with one
 message listing every failure.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 cohort
 cohort$metadata

@@ -24,5 +24,5 @@ test_that("chr prefixes and companion files are normalized", {
 test_that("missing required columns fail early", {
   path <- tempfile(fileext = ".cna.seg")
   writeLines("chr\tstart\tend\n1\t1\t100\n", path)
-  expect_error(read_ichor_cna(path), class = "ichorviz_schema_error")
+  expect_error(read_ichor_cna(path), class = "seena_schema_error")
 })

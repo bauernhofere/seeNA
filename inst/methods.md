@@ -65,7 +65,7 @@ file order or optimize fits to a desired manuscript result.
   is a separate display transform; it does not mutate this column.
 - `copy_number`, `event`: raw ichorCNA output fields.
 - `corrected_copy_number`, `corrected_call`: caller-corrected output fields, not
-  recomputed by ichorViz. Corrected calls, absolute CN, logR sign and neutrality
+  recomputed by seeNA. Corrected calls, absolute CN, logR sign and neutrality
   relative to fitted ploidy must not be conflated.
 - `logR_copy_number`: diagnostic only.
 - TF: fraction [0,1]; ploidy positive. Missing values remain missing.
@@ -90,6 +90,11 @@ This evidence does not identify every run-level threshold or biological baseline
 
 `value` is required. `call_column` explicitly chooses corrected_call (default)
 or event when value='call'. Metadata/sample order is validated at every boundary.
+The continuous bin measurements are `logR`, `copy_number` and
+`corrected_copy_number`. `value='segment_median'` instead uses the normalized
+segment table's exported `median` (raw log2 ratio). A selected-run segment table
+is required for every sample; missing files error, with no bin-logR fallback.
+No source values are overwritten and no purity/ploidy adjustment is applied.
 
 For source interval i and target bin j, overlap in bp is:
 
@@ -112,6 +117,19 @@ inputs, temporary calculations, bin labels and metadata. Source bin filtering
 can produce substantial NA fractions even for valid input (the exact proportion
 is dataset-specific); inspect coverage rather than assuming the import failed.
 
+For `segment_median`, the source intervals in these formulas are **segments**.
+A target bin crossing a segment boundary receives a bp-weighted mean of the
+exported medians, not a newly calculated median. NA medians, gaps between
+segments and absent chromosomes contribute no support; they are not zero.
+Coverage measures finite **segment-span coverage**, not bin/read coverage:
+a fitted segment can bridge filtered/absent bins or bins with missing logR.
+No intersection with the original bin grid is silently imposed. `mixed` is
+FALSE for this continuous measurement, even at segment boundaries. The matrix
+`value` and `aggregation` identify this operation, and import provenance retains
+the selected segment-file fingerprints. Smoothed fitted summaries do not rescue
+unreliable low-TF fits. LogR amplitude reflects TF as well as CNA magnitude, so
+weaker signal cannot establish a smaller tumor alteration or biological absence.
+
 ## Plotting
 
 Profiles color bins by the specified call field; segment medians are grey to
@@ -130,7 +148,9 @@ metadata in `ichor_transform`. This is not purity deconvolution, integer CN, or 
 promise that every gain/loss will lie above/below zero. Chromosome-X conventions
 and noise still matter; neither y=0 nor gender alone identifies neutral CN.
 
-Heatmaps preserve manifest order by default. Every plot shows user-chosen sample
+Heatmaps preserve manifest order by default. `group` splits rows into blocks in factor-level
+or first-appearance order and never reorders rows within a block; it cannot be
+combined with clustering. `row_labels` and `text_style` change displayed text only. Every plot shows user-chosen sample
 identifiers by default; `show_sample_id = FALSE` (profiles, comparisons, regions)
 or `show_row_names = FALSE` (heatmaps) omits them. Categorical colors are discrete. Continuous default scales include
 observed extremes (CN 2 is a reference color, not a neutrality decision). Custom

@@ -1,5 +1,5 @@
 .validate_intervals <- function(d, build, required, label) {
-  fail <- function(msg) .ichor_abort(paste(label, msg), "ichorviz_validation_error")
+  fail <- function(msg) .ichor_abort(paste(label, msg), "seena_validation_error")
   if (!is.data.frame(d) || !all(required %in% names(d)) || !nrow(d)) fail("has no rows or required columns.")
   if (!is.character(d$chr) || anyNA(d$chr) || !all(d$chr %in% .chr_levels)) fail("has unsupported chromosomes.")
   for (nm in c("start", "end")) {
@@ -63,7 +63,7 @@
 #'   `sample_id`, `genome_build`, `bins`, `segments`, `params`,
 #'   `coordinate_changes` and `provenance`.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(
 #'   file.path(root, "example-a.cna.seg"),
 #'   file.path(root, "example-a.seg"),
@@ -90,12 +90,12 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
   parameters <- if ("params" %in% names(paths)) read_ichor_params(paths[["params"]]) else NULL
   source_ids <- unique(c(attr(bins, "source_id"), attr(segments, "source_id"), parameters$sample_id))
   if (length(source_ids) != 1L || is.na(source_ids) || !nzchar(source_ids)) {
-    .ichor_abort("Source sample IDs disagree across bins, segments, or parameters.", "ichorviz_identity_error")
+    .ichor_abort("Source sample IDs disagree across bins, segments, or parameters.", "seena_identity_error")
   }
   id <- .default_if_null(sample_id, source_ids)
   if (!is.character(id) || length(id) != 1L || is.na(id) || !nzchar(trimws(id))) .ichor_abort("sample_id must be a non-empty character scalar.")
   after <- .fingerprint(paths)
-  if (!identical(before, after)) .ichor_abort("Input files changed while being read.", "ichorviz_file_error")
+  if (!identical(before, after)) .ichor_abort("Input files changed while being read.", "seena_file_error")
   attr(bins, "source_id") <- attr(bins, "sample_id") <- NULL
   if (!is.null(segments)) {
     segments$sample_id <- NULL
@@ -112,7 +112,7 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
   }
   before$sample_id <- id
   before$genome_build <- genome_build
-  before$package_version <- as.character(utils::packageVersion("ichorViz"))
+  before$package_version <- as.character(utils::packageVersion("seeNA"))
   before$schema_version <- 1L
   before$coordinate_policy <- bounds
   if (retain_paths) before$path <- unname(paths)
@@ -133,14 +133,14 @@ read_ichor_sample <- function(cna_seg, seg = NULL, params = NULL, genome_build,
 #' @param x An `ichor_sample` object.
 #' @return `x`, invisibly; invalid objects raise classed errors.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 #' validate_ichor_sample(a)
 #' @export
 validate_ichor_sample <- function(x) {
   if (!inherits(x, "ichor_sample") || !identical(x$schema_version, 1L)) .ichor_abort("Expected ichor_sample schema version 1.")
   if (!is.character(x$sample_id) || length(x$sample_id) != 1L || is.na(x$sample_id) || !nzchar(x$sample_id)) {
-    .ichor_abort("Invalid sample_id.", "ichorviz_validation_error")
+    .ichor_abort("Invalid sample_id.", "seena_validation_error")
   }
   if (length(x$genome_build) != 1L || !x$genome_build %in% c("hg19", "hg38")) .ichor_abort("Invalid genome_build.")
   .validate_intervals(x$bins, x$genome_build, c("chr", "start", "end", "logR"), "Bins")
@@ -149,14 +149,14 @@ validate_ichor_sample <- function(x) {
     p <- x$params
     if (!is.data.frame(p) || nrow(p) != 1L ||
         !all(c("sample_id", "tumor_fraction", "ploidy") %in% names(p)) || !identical(p$sample_id, x$sample_id)) {
-      .ichor_abort("Invalid parameter table or sample identity.", "ichorviz_validation_error")
+      .ichor_abort("Invalid parameter table or sample identity.", "seena_validation_error")
     }
     tf <- p$tumor_fraction; ploidy <- p$ploidy
     if (!is.numeric(tf) || any(!is.na(tf) & (!is.finite(tf) | tf < 0 | tf > 1))) {
-      .ichor_abort("Tumor fraction must be a fraction in [0, 1].", "ichorviz_validation_error")
+      .ichor_abort("Tumor fraction must be a fraction in [0, 1].", "seena_validation_error")
     }
     if (!is.numeric(ploidy) || any(!is.na(ploidy) & (!is.finite(ploidy) | ploidy <= 0))) {
-      .ichor_abort("Ploidy must be positive and finite.", "ichorviz_validation_error")
+      .ichor_abort("Ploidy must be positive and finite.", "seena_validation_error")
     }
   }
   invisible(x)

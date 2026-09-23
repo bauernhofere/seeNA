@@ -101,7 +101,7 @@ Gold does not invalidate a source call under the default sex-chromosome policy.
 Fixed view limits clip only the drawing and warn on out-of-view heights.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 plot_ichor_concordance(a, b, region = "chr1:1-5000000", show_sample_id = FALSE)

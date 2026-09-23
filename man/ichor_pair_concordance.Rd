@@ -68,7 +68,7 @@ representative. This quantity is not a difference or effect size. Swapping
 samples can reverse its sign in equal-absolute discordant ties.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 d <- ichor_pair_concordance(a, b, chromosomes = "1")

@@ -12,7 +12,12 @@ plot_ichor_heatmap(
   colors = NULL,
   annotation_colors = NULL,
   row_order = NULL,
-  na_col = "#D9D9D9"
+  na_col = "#D9D9D9",
+  group = NULL,
+  row_labels = NULL,
+  legend_title = NULL,
+  legend_direction = c("vertical", "horizontal"),
+  text_style = NULL
 )
 }
 \arguments{
@@ -33,6 +38,18 @@ plot_ichor_heatmap(
 with clustering.}
 
 \item{na_col}{Color for missing, insufficiently covered or tied values.}
+
+\item{group}{Optional metadata column splitting rows into blocks. No missing
+values; cannot be combined with \code{cluster_rows}.}
+
+\item{row_labels}{Optional display labels named by every sample ID.}
+
+\item{legend_title}{Optional title for the value legend.}
+
+\item{legend_direction}{\code{"vertical"} (default) or \code{"horizontal"}, one row.}
+
+\item{text_style}{Optional list of \code{grid::gpar()} settings, limited to
+\code{fontfamily}, \code{fontsize} and \code{col}.}
 }
 \value{
 An undrawn \code{ComplexHeatmap::Heatmap} object. Use
@@ -50,11 +67,18 @@ and is exploratory only. Missing, tied and under-covered cells use \code{na_col}
 inspect the matrix \code{coverage} and \code{mixed} layers to tell them apart. CN 2 is
 a reference color, not a neutrality call. See the installed methods
 contract for limits.
+
+\code{group} splits rows into blocks (for example biofluids or timepoints) while
+keeping \code{row_order} within each block; blocks follow factor levels, otherwise
+first appearance in row order. \code{row_labels} changes displayed text only: rows
+stay keyed by sample ID. \code{text_style} sets font family, size and colour for
+row labels, block and chromosome titles, annotation names and legends, so a
+figure can match the text of surrounding panels.
 }
 \examples{
 if (requireNamespace("ComplexHeatmap", quietly = TRUE) &&
     requireNamespace("circlize", quietly = TRUE)) {
-  root <- system.file("extdata", package = "ichorViz")
+  root <- system.file("extdata", package = "seeNA")
   cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
   m <- ichor_matrix(cohort, value = "call", chromosomes = c("1", "2"))
   h <- plot_ichor_heatmap(m, annotation_columns = "condition")

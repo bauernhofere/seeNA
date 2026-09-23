@@ -41,7 +41,7 @@
 #'   Default `TRUE`. Set `FALSE` to omit identifiers from the figure.
 #' @return A `ggplot` object with an `ichor_transform` metadata attribute.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(
 #'   file.path(root, "example-a.cna.seg"),
 #'   file.path(root, "example-a.seg"),
@@ -172,7 +172,7 @@ plot_ichor_profile <- function(x, call_column = "corrected_call",
 #' @inheritParams plot_ichor_profile
 #' @return A `ggplot` object with an `ichor_transform` metadata attribute.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
 #'                        file.path(root, "example-a.seg"), genome_build = "hg38")
 #' b <- read_ichor_sample(file.path(root, "example-b.cna.seg"),
@@ -187,7 +187,7 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
   .flag(ploidy_adjust, "ploidy_adjust")
   .flag(show_sample_id, "show_sample_id")
   d <- .comparison_data(samples, region, ploidy_adjust)
-  if (!nrow(d$bins)) .ichor_abort("No bins overlap the requested region.", "ichorviz_region_error")
+  if (!nrow(d$bins)) .ichor_abort("No bins overlap the requested region.", "seena_region_error")
   if (is.null(colors)) colors <- stats::setNames(.default_sample_colors(length(samples)), names(samples))
   .check_colors(colors, names(samples))
   if (!any(is.finite(d$bins$logR))) .ichor_abort("No finite logR values to plot.")
@@ -239,7 +239,7 @@ plot_ichor_compare <- function(samples, region = NULL, colors = NULL, point_size
 #' @param region Required chromosome or `chr:start-end` interval.
 #' @return A `ggplot` object with an `ichor_transform` metadata attribute.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
 #'                        file.path(root, "example-a.seg"), genome_build = "hg38")
 #' plot_ichor_region(a, "chr1:1-4000000")

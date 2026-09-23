@@ -49,7 +49,7 @@ Import-time fingerprints are stored for reproducibility. See the installed
 methods contract for the full coordinate and identity rules.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(
   file.path(root, "example-a.cna.seg"),
   file.path(root, "example-a.seg"),

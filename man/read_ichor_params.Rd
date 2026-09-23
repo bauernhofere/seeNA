@@ -23,6 +23,6 @@ table is ignored as diagnostics. Empty files and files describing several
 samples raise a schema error.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 read_ichor_params(file.path(root, "example-a.params.txt"))
 }

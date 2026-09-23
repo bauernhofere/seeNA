@@ -1,6 +1,6 @@
 .rebin_sample <- function(sample, bin_size, value, call_column) {
-  d <- sample$bins
-  column <- if (value == "call") call_column else value
+  d <- if (value == "segment_median") sample$segments else sample$bins
+  column <- switch(value, call = call_column, segment_median = "median", value)
   if (!column %in% names(d)) .ichor_abort(paste("Required matrix column unavailable:", column))
   values <- if (value == "call") .call_score(d[[column]]) else d[[column]]
   d$value <- values
@@ -47,15 +47,24 @@
 #'
 #' @details
 #' Continuous values use base-pair-weighted means of the overlapping source
-#' bins. Calls use the category with the greatest base-pair support; ties give
+#' intervals. Calls use the category with the greatest base-pair support; ties give
 #' `NA` and heterogeneous bins are flagged in `mixed`. Coverage is observed
 #' overlap divided by target-bin width; cells below `min_coverage` or with no
 #' observations are `NA`. Missing observations are never treated as neutral.
+#'
+#' `segment_median` reads the exported segment `median` directly, without changing
+#' bin logR or applying a purity/ploidy transform. Every sample must have a segment
+#' table. At boundaries, the result is an overlap-weighted mean of segment medians,
+#' not a newly calculated median. NA medians and uncovered segment gaps contribute
+#' no coverage. Coverage measures finite segment spans, not observed bin/read
+#' coverage: a segment can bridge missing or filtered bins. No bin mask is applied.
+#' These fitted summaries can smooth noise but do not validate low-TF fits or
+#' make logR amplitudes directly comparable as tumor copy numbers across fluids.
 #' See the installed methods contract for the formulas.
 #' @param cohort An `ichor_cohort`.
 #' @param bin_size Positive integer base-pair width.
 #' @param value Explicit measurement: `"logR"`, `"corrected_copy_number"`,
-#'   `"copy_number"`, or `"call"`.
+#'   `"copy_number"`, `"call"`, or raw exported `"segment_median"` log2 ratio.
 #' @param call_column For call matrices, `"corrected_call"` or `"event"`.
 #' @param min_coverage Minimum observed fraction (default 1). Values with less
 #'   support are `NA`; zero coverage always produces `NA`.
@@ -64,7 +73,7 @@
 #' @return A validated `ichor_matrix` with `values`, `coverage`, `mixed`,
 #'   `bins`, `samples`, transformation settings and import provenance.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 #' m <- ichor_matrix(cohort, value = "call", chromosomes = "1")
 #' m
@@ -72,18 +81,26 @@
 #' m$coverage[, 1:4]
 #' logr <- ichor_matrix(cohort, value = "logR", bin_size = 5e5, chromosomes = "1")
 #' logr$values[, 1:4]
+#' segmented <- ichor_matrix(cohort, value = "segment_median", chromosomes = "1")
+#' segmented$values[, 1:4]
 #' @export
 ichor_matrix <- function(cohort, bin_size = 1e6, value,
                          call_column = c("corrected_call", "event"), min_coverage = 1,
                          chromosomes = .chr_levels, max_cells = 5e7) {
   validate_ichor_cohort(cohort)
-  value <- match.arg(value, c("logR", "corrected_copy_number", "copy_number", "call"))
+  value <- match.arg(value, c("logR", "corrected_copy_number", "copy_number", "call", "segment_median"))
   call_column <- match.arg(call_column)
   .scalar(bin_size, "bin_size", integer = TRUE, lower = 1)
   .scalar(min_coverage, "min_coverage", lower = 0, upper = 1)
   .scalar(max_cells, "max_cells", integer = TRUE, lower = 1)
   chromosomes <- unique(.normalize_chr(chromosomes))
   if (!length(chromosomes) || anyNA(chromosomes) || !all(chromosomes %in% .chr_levels)) .ichor_abort("Unsupported chromosomes.")
+  source_layer <- if (value == "segment_median") "segments" else "bins"
+  if (value == "segment_median") {
+    missing <- vapply(cohort$samples, function(s) is.null(s$segments), logical(1))
+    if (any(missing)) .ichor_abort(paste("Samples", paste(names(cohort$samples)[missing], collapse = ", "),
+      "need segment tables for value = 'segment_median'; supply the selected-run segment files."), "seena_matrix_error")
+  }
   sizes <- .chromosome_sizes(cohort$genome_build)
   sizes <- sizes[sizes$chr %in% chromosomes, ]
   n_bins <- sum(ceiling(sizes$length / bin_size))
@@ -102,7 +119,7 @@ ichor_matrix <- function(cohort, bin_size = 1e6, value,
   mixed <- matrix(FALSE, nrow(mat), ncol(mat), dimnames = dims)
   for (i in seq_along(cohort$samples)) {
     s <- cohort$samples[[i]]
-    s$bins <- s$bins[s$bins$chr %in% chromosomes, , drop = FALSE]
+    s[[source_layer]] <- s[[source_layer]][s[[source_layer]]$chr %in% chromosomes, , drop = FALSE]
     d <- .rebin_sample(s, bin_size, value, call_column)
     j <- match(paste(d$chr, d$bin_index, sep = ":"), keys)
     if (anyNA(j)) .ichor_abort("Source intervals are outside the target grid.")
@@ -130,7 +147,7 @@ ichor_matrix <- function(cohort, bin_size = 1e6, value,
 #' @param x An `ichor_matrix`.
 #' @return `x`, invisibly.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 #' validate_ichor_matrix(ichor_matrix(cohort, value = "logR", chromosomes = "2"))
 #' @export
@@ -143,7 +160,7 @@ validate_ichor_matrix <- function(x) {
       !identical(colnames(x$values), x$bins$label)) .ichor_abort("Matrix metadata or bin order disagrees.")
   .validate_intervals(x$bins, x$genome_build, c("chr", "start", "end"), "Matrix bins")
   .scalar(x$bin_size, "bin_size", integer = TRUE, lower = 1)
-  if (length(x$value) != 1L || !x$value %in% c("call", "logR", "corrected_copy_number", "copy_number")) .ichor_abort("Invalid matrix measurement.")
+  if (length(x$value) != 1L || !x$value %in% c("call", "logR", "corrected_copy_number", "copy_number", "segment_median")) .ichor_abort("Invalid matrix measurement.")
   if (x$value == "call" && (length(x$call_column) != 1L || !x$call_column %in% c("corrected_call", "event"))) .ichor_abort("Invalid call column.")
   expected_aggregation <- if (x$value == "call") "base_pair_mode_ties_NA" else "base_pair_mean"
   if (!identical(x$aggregation, expected_aggregation)) .ichor_abort("Matrix aggregation disagrees with measurement.")

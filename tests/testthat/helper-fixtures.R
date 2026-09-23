@@ -1,5 +1,5 @@
 fixture_path <- function(name) {
-  system.file("extdata", name, package = "ichorViz", mustWork = TRUE)
+  system.file("extdata", name, package = "seeNA", mustWork = TRUE)
 }
 
 example_sample <- function(id = c("a", "b")) {

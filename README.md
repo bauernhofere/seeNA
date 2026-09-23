@@ -6,13 +6,13 @@ output: github_document
 
 <!-- Generated from README.Rmd with make readme. Do not edit README.md directly. -->
 
-# ichorViz
+# seeNA
 
 **From ichorCNA output files to comparable, auditable figures in R.**
 
-[![R-CMD-check](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/bauernhofere/ichorViz/actions/workflows/R-CMD-check.yaml?query=branch%3Amain)
+[![R-CMD-check](https://github.com/bauernhofere/seeNA/actions/workflows/R-CMD-check.yaml/badge.svg?branch=main)](https://github.com/bauernhofere/seeNA/actions/workflows/R-CMD-check.yaml?query=branch%3Amain)
 
-ichorViz reads existing [ichorCNA](https://github.com/GavinHaLab/ichorCNA)
+seeNA reads existing [ichorCNA](https://github.com/GavinHaLab/ichorCNA)
 results and turns them into plots: single genome-wide profiles, overlays of
 related samples, zoomed regions, and annotated cohort heatmaps. It does not
 run ichorCNA, choose a fitted solution, infer sample pairing, or call
@@ -27,19 +27,18 @@ stay with the plots.
 | **Cohort** | Coverage-aware matrices and annotated ComplexHeatmap objects |
 | **Your style** | Ordinary ggplot objects, named palettes and public transformation helpers |
 
-> **Private development version.** This is not a public software release;
-> see the [decision register](docs/decision-register.md) for
-> rationale and open approval gates.
+> **Public development version.** No tagged or archived release yet; APIs may
+> change. See the [decision register](docs/decision-register.md) for rationale
+> and open scientific approval gates.
 
 ## Install
 
 
 ``` r
 # install.packages("remotes")
-# Requires private-repository access.
-remotes::install_github("bauernhofere/ichorViz", ref = "main")
+remotes::install_github("bauernhofere/seeNA", ref = "main")
 # Record the exact commit you installed alongside your results:
-packageDescription("ichorViz")$RemoteSha
+packageDescription("seeNA")$RemoteSha
 
 # Optional heatmap dependencies:
 # install.packages("BiocManager")
@@ -55,8 +54,8 @@ tumor fraction / ploidy.
 
 
 ``` r
-library(ichorViz)
-root <- system.file("extdata", package = "ichorViz")
+library(seeNA)
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(
   file.path(root, "example-a.cna.seg"),
   file.path(root, "example-a.seg"),
@@ -240,6 +239,33 @@ For a full cohort, plot `m` directly. Rows keep manifest order unless you ask
 for another order. Check `m$coverage` and `m$mixed` before interpreting NA
 cells: ichorCNA filters bins, and an absent bin is not a neutral call.
 
+For a continuous, segmented signal instead of discrete calls, use the exported
+segment medians. Every sample needs a segment file from its selected run.
+
+
+``` r
+segmented <- ichor_matrix(
+  cohort, value = "segment_median", chromosomes = c("1", "2", "X")
+)
+segmented$values[, 1:4]
+#>           chr1:1-1e+06 chr1:1000001-2e+06 chr1:2000001-3e+06 chr1:3000001-4e+06
+#> example-a       -0.005             -0.005               0.58               0.58
+#> example-b        0.030              0.030               0.03               0.03
+segment_heatmap <- plot_ichor_heatmap(
+  segmented,
+  colors = circlize::colorRamp2(c(-1, 0, 1), c("#1E9E5E", "#F7F7F7", "#CB2B2B"))
+)
+# ComplexHeatmap::draw(segment_heatmap) renders it on the current device.
+```
+
+These are raw log2-ratio segment summaries, not tumor copy numbers or new calls.
+At segment boundaries, target bins contain overlap-weighted means of exported
+medians. Coverage measures finite **segment spans**, which can bridge missing
+source bins; NA medians and gaps between segments stay unsupported. Source bin
+logR is unchanged. TF affects amplitude, so weaker signal does not establish
+biological absence. The shared ±1 color limits above are illustrative saturation
+limits, not CNA thresholds. See decision D22 for the interpretation limits.
+
 ## Raw or ploidy-adjusted logR
 
 Raw logR is the default. `ploidy_adjust = TRUE` adds
@@ -309,8 +335,8 @@ exclusions, thresholds and presentation still need author approval; see the
 
 ## Credit and citation
 
-ichorViz is independent and unofficial; it is distributed under **GPL-3-or-later**.
+seeNA is independent and unofficial; it is distributed under **GPL-3-or-later**.
 See [NOTICE.md](NOTICE.md) for attribution and upstream provenance. Cite
 [Adalsteinsson, Ha, Freeman et al. (2017)](https://doi.org/10.1038/s41467-017-00965-y)
-for ichorCNA, and record the exact ichorViz commit used. A public release and
+for ichorCNA, and record the exact seeNA commit used. A tagged release and
 final citation metadata await author approval.

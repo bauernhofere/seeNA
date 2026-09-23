@@ -5,15 +5,15 @@
     aliases <- unique(.normalize_key(c(target, specification[[target]])))
     candidates <- which(keys %in% aliases)
     if (length(candidates) > 1L) {
-      .ichor_abort(paste("Ambiguous columns for", target), "ichorviz_schema_error")
+      .ichor_abort(paste("Ambiguous columns for", target), "seena_schema_error")
     }
     if (length(candidates)) found[target] <- candidates
   }
-  if (anyDuplicated(found[!is.na(found)])) .ichor_abort("Ambiguous semantic columns.", "ichorviz_schema_error")
+  if (anyDuplicated(found[!is.na(found)])) .ichor_abort("Ambiguous semantic columns.", "seena_schema_error")
   missing <- required[is.na(found[required])]
   if (length(missing)) {
     .ichor_abort(paste("Missing required columns:", paste(missing, collapse = ", ")),
-                 "ichorviz_schema_error")
+                 "seena_schema_error")
   }
   found
 }
@@ -23,10 +23,10 @@
   out <- withCallingHandlers(
     data.table::fread(file = path, data.table = FALSE, check.names = FALSE,
                      colClasses = "character", na.strings = c("NA", "NaN", "")),
-    warning = function(w) .ichor_abort("Malformed or empty tabular input.", "ichorviz_schema_error")
+    warning = function(w) .ichor_abort("Malformed or empty tabular input.", "seena_schema_error")
   )
   if (!nrow(out) || anyDuplicated(names(out))) {
-    .ichor_abort("Empty table or duplicate column names.", "ichorviz_schema_error")
+    .ichor_abort("Empty table or duplicate column names.", "seena_schema_error")
   }
   out
 }
@@ -63,7 +63,7 @@
 #' @param sample_id Optional output alias, not a selector for multi-sample files.
 #' @return Normalized data frame with `sample_id` and `source_id` attributes.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' bins <- read_ichor_cna(file.path(root, "example-a.cna.seg"))
 #' head(bins)
 #' attr(bins, "sample_id")
@@ -93,7 +93,7 @@ read_ichor_cna <- function(path, sample_id = NULL) {
       fields[i] <- substring(fields[i], pos + 1)
     }
   }
-  if (length(unique(prefixes)) > 1L) .ichor_abort("Multiple sample prefixes in .cna.seg.", "ichorviz_schema_error")
+  if (length(unique(prefixes)) > 1L) .ichor_abort("Multiple sample prefixes in .cna.seg.", "seena_schema_error")
   names(raw) <- fields
   id <- if (length(prefixes)) prefixes[1] else sub("\\.cna\\.seg$", "", basename(path))
   out <- .normalize_table(raw, spec, c("chr", "start", "end", "logR"))
@@ -111,7 +111,7 @@ read_ichor_cna <- function(path, sample_id = NULL) {
 #' @return A data frame with normalized segment columns and a `source_id`
 #'   attribute.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' read_ichor_segments(file.path(root, "example-a.seg"))
 #' @export
 read_ichor_segments <- function(path) {
@@ -123,7 +123,7 @@ read_ichor_segments <- function(path) {
                subclone_status = "subclone")
   out <- .normalize_table(raw, spec, c("chr", "start", "end", "median"))
   if ("sample_id" %in% names(out) && (anyNA(out$sample_id) || length(unique(out$sample_id)) != 1L)) {
-    .ichor_abort("Segment file must contain exactly one source sample ID.", "ichorviz_schema_error")
+    .ichor_abort("Segment file must contain exactly one source sample ID.", "seena_schema_error")
   }
   attr(out, "source_id") <- if ("sample_id" %in% names(out)) out$sample_id[1] else
     sub("\\.seg(\\.txt)?$", "", basename(path))
@@ -143,7 +143,7 @@ read_ichor_segments <- function(path) {
 #' @param path Path to a `.params.txt` file.
 #' @return One-row data frame: `sample_id`, `tumor_fraction`, `ploidy`, `gender`.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' read_ichor_params(file.path(root, "example-a.params.txt"))
 #' @export
 read_ichor_params <- function(path) {
@@ -154,18 +154,18 @@ read_ichor_params <- function(path) {
   add <- function(key, val) {
     if (key %in% c("tumor_fraction", "ploidy")) val <- .as_number(val, key) else val <- .text_missing(val)
     if (key %in% names(values) && !isTRUE(all.equal(values[[key]], val, tolerance = 1e-8))) {
-      .ichor_abort(paste("Conflicting parameter values for", key), "ichorviz_schema_error")
+      .ichor_abort(paste("Conflicting parameter values for", key), "seena_schema_error")
     }
     values[[key]] <<- val
   }
   header <- grep("^Sample\\t", lines, ignore.case = TRUE)
   if (length(header)) {
     if (length(header) != 1 || header != 1 || length(lines) < 2) {
-      .ichor_abort("Malformed parameter header.", "ichorviz_schema_error")
+      .ichor_abort("Malformed parameter header.", "seena_schema_error")
     }
     keys <- .normalize_key(strsplit(lines[1], "\t", fixed = TRUE)[[1]])
     vals <- strsplit(lines[2], "\t", fixed = TRUE)[[1]]
-    if (length(keys) != length(vals) || anyDuplicated(keys)) .ichor_abort("Malformed parameter row.", "ichorviz_schema_error")
+    if (length(keys) != length(vals) || anyDuplicated(keys)) .ichor_abort("Malformed parameter row.", "seena_schema_error")
     for (i in seq_along(keys)) if (keys[i] %in% c("sample", "tumor_fraction", "ploidy", "gender")) add(keys[i], vals[i])
     lines <- lines[-(1:2)]
   }
@@ -175,7 +175,7 @@ read_ichor_params <- function(path) {
   if (length(diagnostics)) lines <- lines[seq_len(diagnostics[1] - 1L)]
   for (line in lines) {
     if (!grepl(":", line, fixed = TRUE)) {
-      if (grepl("\t", line, fixed = TRUE)) .ichor_abort("Multiple sample rows in parameter file.", "ichorviz_schema_error")
+      if (grepl("\t", line, fixed = TRUE)) .ichor_abort("Multiple sample rows in parameter file.", "seena_schema_error")
       add("sample", line)
       next
     }
@@ -183,7 +183,7 @@ read_ichor_params <- function(path) {
     if (key %in% c("sample", "tumor_fraction", "ploidy", "gender")) add(key, trimws(sub("^[^:]*:", "", line)))
   }
   if (!any(c("tumor_fraction", "ploidy") %in% names(values))) {
-    .ichor_abort("No recognized scientific parameters.", "ichorviz_schema_error")
+    .ichor_abort("No recognized scientific parameters.", "seena_schema_error")
   }
   source_sample <- values$sample
   if (is.null(source_sample) || is.na(source_sample)) source_sample <- sub("\\.params\\.txt$", "", basename(path))

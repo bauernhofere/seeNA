@@ -43,7 +43,7 @@ to reproduce the upstream plotting shift (see \code{\link[=ichor_adjusted_logr]{
 See the installed methods contract for limits.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(
   file.path(root, "example-a.cna.seg"),
   file.path(root, "example-a.seg"),

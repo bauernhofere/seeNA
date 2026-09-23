@@ -1,12 +1,12 @@
-citHeader("Cite the exact ichorViz version/commit used and cite ichorCNA separately.")
+citHeader("Cite the exact seeNA version/commit used and cite ichorCNA separately.")
 
 bibentry(
   bibtype = "Manual",
-  title = "ichorViz: Explore and Compare ichorCNA Copy-Number Profiles",
+  title = "seeNA: Explore and Compare ichorCNA Copy-Number Profiles",
   author = person("Emil", "Bauernhofer"),
   year = "2026",
   note = paste("R package version", meta$Version, "(development version; record the commit)"),
-  url = "https://github.com/bauernhofere/ichorViz"
+  url = "https://github.com/bauernhofere/seeNA"
 )
 
 citFooter(paste(

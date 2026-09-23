@@ -47,7 +47,7 @@
 #' @return Faceted ggplot object. Attributes `ichor_concordance` (displayed-bin
 #'   table), `ichor_transform` and `ichor_view` retain data and policy settings.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 #' b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 #' plot_ichor_concordance(a, b, region = "chr1:1-5000000", show_sample_id = FALSE)
@@ -92,7 +92,7 @@ plot_ichor_concordance <- function(a, b, region = NULL, bin_size = 1e6,
   r <- if (is.null(region)) NULL else parse_ichor_region(region, a$genome_build)
   if (!is.null(r)) {
     d <- d[d$chr == r$chr & d$end >= r$start & d$start <= r$end, , drop = FALSE]
-    if (!nrow(d)) .ichor_abort("Region is outside the selected chromosome grid.", "ichorviz_region_error")
+    if (!nrow(d)) .ichor_abort("Region is outside the selected chromosome grid.", "seena_region_error")
   }
   offset <- function(chr) if (is.null(r)) layout$offset[match(chr, layout$chr)] else rep(0, length(chr))
   d$xleft <- (offset(d$chr) + d$start - 0.5) / 1e6

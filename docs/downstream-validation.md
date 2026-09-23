@@ -1,7 +1,9 @@
 # Downstream workflow follow-up — development version 0.0.0.9002
 
 This follows `hardening-validation.md`. It is not a release or approval of final
-manuscript figures. The repository remains private and the hardening PR is draft.
+manuscript figures. At this historical validation stage, the repository was
+private and the hardening PR was draft. See the later
+[public-repository preflight](publication-audit.md) for the visibility decision.
 A subsequent [decision audit](decision-register.md#live-manuscript-port-audit)
 records changes in the live manuscript wrapper since the earlier review; the
 historical CN-minus-ploidy description below is not its current measurement.
@@ -52,8 +54,8 @@ The prior remote run was not green despite local success:
    8.1.0 while local/generated docs used 7.3.3. The generator is now pinned and
    checked against RoxygenNote; documentation drift checks remain enabled.
 
-Subsequently confirmed: both [PR](https://github.com/bauernhofere/ichorViz/actions/runs/34724852864)
-and [push](https://github.com/bauernhofere/ichorViz/actions/runs/34724851027) runs
+Subsequently confirmed: both [PR](https://github.com/bauernhofere/seeNA/actions/runs/34724852864)
+and [push](https://github.com/bauernhofere/seeNA/actions/runs/34724851027) runs
 for that development commit succeeded on all five configurations; the CI badge
 in the README reports the current branch. This does not approve the
 manuscript workflow.

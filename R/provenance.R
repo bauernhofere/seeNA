@@ -1,7 +1,7 @@
 .fingerprint <- function(paths) {
   info <- file.info(paths)
   hashes <- unname(tools::md5sum(paths))
-  if (anyNA(hashes) || anyNA(info$size)) .ichor_abort("Cannot fingerprint input files.", "ichorviz_file_error")
+  if (anyNA(hashes) || anyNA(info$size)) .ichor_abort("Cannot fingerprint input files.", "seena_file_error")
   data.frame(type = names(paths), bytes = info$size, md5 = hashes, stringsAsFactors = FALSE)
 }
 
@@ -17,7 +17,7 @@
 #' @param x An `ichor_sample`, `ichor_cohort`, or `ichor_matrix`.
 #' @return A data frame of import-time fingerprints and metadata.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 #' ichor_provenance(a)
 #' @export

@@ -9,7 +9,7 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8, fig.height = 3)
-library(ichorViz)
+library(seeNA)
 ```
 
 This example uses the package's small test-only format fixtures. For manuscript
@@ -18,7 +18,7 @@ results, supply your real files and record the exact selected run.
 ## Read without swallowing warnings
 
 ```{r import}
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 x <- read_ichor_sample(
   file.path(root, "example-a.cna.seg"),
   file.path(root, "example-a.seg"),
@@ -34,7 +34,7 @@ Each clipped interval is recorded in `x$coordinate_changes`, and a cohort emits
 one summary message rather than one per sample. `bounds = "error"` rejects any
 overhang; `bounds = "trim"` clips any straddling interval with a warning.
 Rather than wrapping imports in `suppressWarnings()`, handle the classed
-conditions `ichorviz_window_padding` (message) and `ichorviz_bounds_warning`
+conditions `seena_window_padding` (message) and `seena_bounds_warning`
 (warning). Window acceptance does not verify the genome build: verify the
 assembly from the original run configuration.
 

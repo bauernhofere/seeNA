@@ -17,7 +17,7 @@ Numeric scalar between zero and one (a fraction, not a percent), or
 Read the fitted tumor fraction
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 a <- read_ichor_sample(file.path(root, "example-a.cna.seg"),
                        params = file.path(root, "example-a.params.txt"),
                        genome_build = "hg38")

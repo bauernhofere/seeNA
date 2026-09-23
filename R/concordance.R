@@ -112,7 +112,7 @@
 #'   including both-neutral and unknown bins. Attributes `settings`, `provenance`
 #'   and `coordinate_changes` retain the import and transformation context.
 #' @examples
-#' root <- system.file("extdata", package = "ichorViz")
+#' root <- system.file("extdata", package = "seeNA")
 #' a <- read_ichor_sample(file.path(root, "example-a.cna.seg"), genome_build = "hg38")
 #' b <- read_ichor_sample(file.path(root, "example-b.cna.seg"), genome_build = "hg38")
 #' d <- ichor_pair_concordance(a, b, chromosomes = "1")

@@ -62,10 +62,11 @@ thresholds, ordering and scale limits need author approval.
 
 ## Manuscript release gate
 
-Keep the repository private until the author approves publication. Before a
-citable release: complete regression tests and checks, rerun the actual figure
+Public repository visibility has been authorized; see the
+[publication preflight](publication-audit.md). Before a tagged/archived release:
+complete regression tests and checks, rerun the actual figure
 workflow against source data, visually inspect plots, reconcile matrix/figure
 semantics with the manuscript, document source ichorCNA run selection, and freeze
-the package commit and analysis inputs. A private GitHub URL is not an accessible
-software release; public release/archive and citation metadata require author
+the package commit and analysis inputs. Public source access is not an archived
+software release; tags, archives and DOI registration require separate author
 approval. No release tag, DOI, or numerical results should be invented.

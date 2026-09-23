@@ -1,4 +1,4 @@
 library(testthat)
-library(ichorViz)
+library(seeNA)
 
-test_check("ichorViz")
+test_check("seeNA")

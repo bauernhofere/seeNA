@@ -20,7 +20,7 @@ ichor_matrix(
 \item{bin_size}{Positive integer base-pair width.}
 
 \item{value}{Explicit measurement: \code{"logR"}, \code{"corrected_copy_number"},
-\code{"copy_number"}, or \code{"call"}.}
+\code{"copy_number"}, \code{"call"}, or raw exported \code{"segment_median"} log2 ratio.}
 
 \item{call_column}{For call matrices, \code{"corrected_call"} or \code{"event"}.}
 
@@ -42,14 +42,23 @@ a sample-by-bin matrix of one chosen measurement together with matching
 }
 \details{
 Continuous values use base-pair-weighted means of the overlapping source
-bins. Calls use the category with the greatest base-pair support; ties give
+intervals. Calls use the category with the greatest base-pair support; ties give
 \code{NA} and heterogeneous bins are flagged in \code{mixed}. Coverage is observed
 overlap divided by target-bin width; cells below \code{min_coverage} or with no
 observations are \code{NA}. Missing observations are never treated as neutral.
+
+\code{segment_median} reads the exported segment \code{median} directly, without changing
+bin logR or applying a purity/ploidy transform. Every sample must have a segment
+table. At boundaries, the result is an overlap-weighted mean of segment medians,
+not a newly calculated median. NA medians and uncovered segment gaps contribute
+no coverage. Coverage measures finite segment spans, not observed bin/read
+coverage: a segment can bridge missing or filtered bins. No bin mask is applied.
+These fitted summaries can smooth noise but do not validate low-TF fits or
+make logR amplitudes directly comparable as tumor copy numbers across fluids.
 See the installed methods contract for the formulas.
 }
 \examples{
-root <- system.file("extdata", package = "ichorViz")
+root <- system.file("extdata", package = "seeNA")
 cohort <- read_ichor_cohort(file.path(root, "example-manifest.csv"), "hg38")
 m <- ichor_matrix(cohort, value = "call", chromosomes = "1")
 m
@@ -57,4 +66,6 @@ m$values[, 1:4]
 m$coverage[, 1:4]
 logr <- ichor_matrix(cohort, value = "logR", bin_size = 5e5, chromosomes = "1")
 logr$values[, 1:4]
+segmented <- ichor_matrix(cohort, value = "segment_median", chromosomes = "1")
+segmented$values[, 1:4]
 }
